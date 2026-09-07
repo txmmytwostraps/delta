@@ -209,10 +209,10 @@ border_width_bottom = 2
 border_color = Color(0.10980392, 0.13333334, 0.16078432, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ls7j4"]
-content_margin_left = 32.0
-content_margin_top = 32.0
-content_margin_right = 32.0
-content_margin_bottom = 32.0
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
 bg_color = Color(0.0627451, 0.078431375, 0.101960786, 1)
 border_width_left = 2
 border_width_top = 2
@@ -221,10 +221,10 @@ border_width_bottom = 2
 border_color = Color(0.49411765, 0.9411765, 0.7607843, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1uvax"]
-content_margin_left = 32.0
-content_margin_top = 32.0
-content_margin_right = 32.0
-content_margin_bottom = 32.0
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
 bg_color = Color(0.0627451, 0.078431375, 0.101960786, 1)
 border_width_left = 2
 border_width_top = 2
@@ -336,9 +336,9 @@ spacing_glyph = 2
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yo71x"]
 content_margin_left = 16.0
-content_margin_top = 24.0
+content_margin_top = 18.0
 content_margin_right = 16.0
-content_margin_bottom = 24.0
+content_margin_bottom = 18.0
 bg_color = Color(0, 0, 0, 0)
 border_width_left = 2
 border_width_top = 2
@@ -350,9 +350,9 @@ border_color = Color(0.10980392, 0.13333334, 0.16078432, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_w87jn"]
 content_margin_left = 16.0
-content_margin_top = 24.0
+content_margin_top = 18.0
 content_margin_right = 16.0
-content_margin_bottom = 24.0
+content_margin_bottom = 18.0
 bg_color = Color(0, 0, 0, 0)
 border_width_left = 2
 border_width_top = 2
@@ -362,9 +362,9 @@ border_color = Color(0.16470589, 0.19607843, 0.23137255, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yfxfp"]
 content_margin_left = 16.0
-content_margin_top = 24.0
+content_margin_top = 18.0
 content_margin_right = 16.0
-content_margin_bottom = 24.0
+content_margin_bottom = 18.0
 bg_color = Color(0, 0, 0, 0)
 border_width_left = 2
 border_width_top = 2
@@ -374,9 +374,9 @@ border_color = Color(0.16470589, 0.19607843, 0.23137255, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vnh5w"]
 content_margin_left = 16.0
-content_margin_top = 24.0
+content_margin_top = 18.0
 content_margin_right = 16.0
-content_margin_bottom = 24.0
+content_margin_bottom = 18.0
 bg_color = Color(0.49411765, 0.9411765, 0.7607843, 1)
 border_width_left = 2
 border_width_top = 2
@@ -494,7 +494,7 @@ Button/styles/normal = SubResource("StyleBoxFlat_w8aae")
 Button/styles/pressed = SubResource("StyleBoxFlat_bjeqe")
 Code/base_type = &"Label"
 Code/colors/font_color = Color(0.9098039, 0.9254902, 0.9372549, 1)
-Code/font_sizes/font_size = 24
+Code/font_sizes/font_size = 28
 Code/fonts/font = ExtResource("1_t35hh")
 CodeEdit/colors/background_color = Color(0.043137256, 0.050980393, 0.0627451, 1)
 CodeEdit/colors/brace_mismatch_color = Color(1, 0.4392157, 0.52156866, 1)
@@ -529,14 +529,14 @@ Error/font_sizes/font_size = 26
 Error/fonts/font = ExtResource("1_t35hh")
 Eyebrow/base_type = &"Label"
 Eyebrow/colors/font_color = Color(0.49411765, 0.9411765, 0.7607843, 1)
-Eyebrow/font_sizes/font_size = 24
+Eyebrow/font_sizes/font_size = 22
 Eyebrow/fonts/font = SubResource("FontVariation_d2be8")
 HBoxContainer/constants/separation = 16
 HSeparator/constants/separation = 2
 HSeparator/styles/separator = SubResource("StyleBoxLine_m06ol")
 Heading/base_type = &"Label"
 Heading/colors/font_color = Color(0.9098039, 0.9254902, 0.9372549, 1)
-Heading/font_sizes/font_size = 72
+Heading/font_sizes/font_size = 52
 Heading/fonts/font = SubResource("FontVariation_secj8")
 Heading2/base_type = &"Label"
 Heading2/colors/font_color = Color(0.9098039, 0.9254902, 0.9372549, 1)
@@ -616,7 +616,7 @@ Segment/colors/font_focus_color = Color(0.5411765, 0.58431375, 0.627451, 1)
 Segment/colors/font_hover_color = Color(0.9098039, 0.9254902, 0.9372549, 1)
 Segment/colors/font_hover_pressed_color = Color(0.043137256, 0.050980393, 0.0627451, 1)
 Segment/colors/font_pressed_color = Color(0.043137256, 0.050980393, 0.0627451, 1)
-Segment/font_sizes/font_size = 24
+Segment/font_sizes/font_size = 22
 Segment/fonts/font = SubResource("FontVariation_7ianx")
 Segment/styles/disabled = SubResource("StyleBoxFlat_yo71x")
 Segment/styles/focus = SubResource("StyleBoxEmpty_m646f")
@@ -625,7 +625,7 @@ Segment/styles/normal = SubResource("StyleBoxFlat_yfxfp")
 Segment/styles/pressed = SubResource("StyleBoxFlat_vnh5w")
 Small/base_type = &"Label"
 Small/colors/font_color = Color(0.5411765, 0.58431375, 0.627451, 1)
-Small/font_sizes/font_size = 24
+Small/font_sizes/font_size = 22
 Small/fonts/font = SubResource("FontVariation_d2be8")
 Tab/base_type = &"Button"
 Tab/colors/font_color = Color(0.5411765, 0.58431375, 0.627451, 1)

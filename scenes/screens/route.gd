@@ -19,6 +19,8 @@ func _ready() -> void:
 	less.pressed.connect(func() -> void: Progress.set_course_lock(maxi(1, Progress.course_lock() - 1)))
 	more.pressed.connect(func() -> void: Progress.set_course_lock(mini(Bank.lessons.size(), Progress.course_lock() + 1)))
 	Progress.changed.connect(render)
+	Settings.changed.connect(render)
+	Scaffold.changed.connect(render)
 	Sync.pulled.connect(render)
 	visibility_changed.connect(func() -> void:
 		if visible:
@@ -67,11 +69,11 @@ func _rows(topics: Array, current: Dictionary) -> Array:
 		for t in here:
 			var marker := Progress.marker_for(t)
 			var is_current: bool = not current.is_empty() and t.concept == current.concept
-			var kind := "locked" if t.locked else ("current" if is_current else ("done" if marker == "[x]" else "todo"))
+			var kind := "locked" if t.locked else ("current" if is_current else ("done" if marker == "✓" else "todo"))
 			var sub: String
 			if t.locked:
 				sub = "L%02d · locked until you reach it in the course" % int(t.lesson)
-			elif marker == "[x]":
+			elif marker == "✓":
 				sub = "L%02d · %d/%d · cleared %s" % [int(t.lesson), t.done, t.total, _short(str(t.cleared_at))]
 			elif is_current:
 				sub = "L%02d · %d/%d · %d to go" % [int(t.lesson), t.done, t.total, t.total - t.done]
@@ -144,6 +146,26 @@ func _row(r: Dictionary, first: bool, last: bool) -> Control:
 		when.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		when.text = str(r.when) + (" · " + str(r.badge) if r.get("badge", "") != "" else "")
 		column.add_child(when)
+	# Hints for this topic: the automatic level, or one set by hand. A tap
+	# cycles auto → full → reduced → minimal → auto, like the site's selector.
+	if r.has("concept") and r.kind != "locked":
+		var concept: String = r.concept
+		var st := Scaffold.stats_for(concept)
+		var setting := Scaffold.override_for(concept)
+		var hint_button := Button.new()
+		hint_button.theme_type_variation = &"Link"
+		hint_button.custom_minimum_size.y = 72
+		hint_button.mouse_filter = Control.MOUSE_FILTER_PASS
+		hint_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		hint_button.clip_text = true
+		hint_button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		var rate: String = " · %d%% OF LAST %d" % [roundi(float(st.rate) * 100.0), mini(20, int(st.attempts))] if st.rate != null else ""
+		hint_button.text = "HINTS · %s%s" % ["AUTO (%s)" % Scaffold.auto_level(concept).to_upper() if setting == "" else setting.to_upper() + " · SET BY HAND", rate]
+		hint_button.pressed.connect(func() -> void:
+			var cycle := ["", "full", "reduced", "minimal"]
+			Scaffold.set_override(concept, cycle[(cycle.find(setting) + 1) % cycle.size()])
+			render())
+		column.add_child(hint_button)
 	if r.get("current", false) and r.get("next", null) != null:
 		var go := Button.new()
 		go.theme_type_variation = &"Primary"

@@ -14,9 +14,9 @@ theme_override_constants/separation = 0
 
 [node name="TopMargin" type="MarginContainer" parent="Column"]
 layout_mode = 2
-theme_override_constants/margin_left = 40
+theme_override_constants/margin_left = 32
 theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 40
+theme_override_constants/margin_right = 32
 theme_override_constants/margin_bottom = 8
 
 [node name="TopBar" type="HBoxContainer" parent="Column/TopMargin"]
@@ -47,9 +47,9 @@ horizontal_scroll_mode = 0
 [node name="Margin" type="MarginContainer" parent="Column/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/margin_left = 40
+theme_override_constants/margin_left = 32
 theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 40
+theme_override_constants/margin_right = 32
 theme_override_constants/margin_bottom = 48
 
 [node name="Body" type="VBoxContainer" parent="Column/Scroll/Margin"]
@@ -81,7 +81,7 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="Order" type="Button" parent="Column/Scroll/Margin/Body/Modes"]
-custom_minimum_size = Vector2(0, 88)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 1
@@ -91,7 +91,7 @@ button_group = SubResource("modes")
 text = "ORDER"
 
 [node name="Bug" type="Button" parent="Column/Scroll/Margin/Body/Modes"]
-custom_minimum_size = Vector2(0, 88)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 1
@@ -101,7 +101,7 @@ button_group = SubResource("modes")
 text = "BUG"
 
 [node name="Print" type="Button" parent="Column/Scroll/Margin/Body/Modes"]
-custom_minimum_size = Vector2(0, 88)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 1
@@ -111,7 +111,7 @@ button_group = SubResource("modes")
 text = "PRINT"
 
 [node name="Type" type="Button" parent="Column/Scroll/Margin/Body/Modes"]
-custom_minimum_size = Vector2(0, 88)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 1
@@ -192,9 +192,9 @@ theme_type_variation = &"BottomBar"
 
 [node name="BarMargin" type="MarginContainer" parent="Column/Bar"]
 layout_mode = 2
-theme_override_constants/margin_left = 40
+theme_override_constants/margin_left = 32
 theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 40
+theme_override_constants/margin_right = 32
 theme_override_constants/margin_bottom = 16
 
 [node name="Actions" type="HBoxContainer" parent="Column/Bar/BarMargin"]

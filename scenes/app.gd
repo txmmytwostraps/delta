@@ -6,6 +6,7 @@ const ProblemScene := preload("res://scenes/problem.tscn")
 const EditorScene := preload("res://scenes/editor.tscn")
 const JudgeCheckScene := preload("res://scenes/judge_check.tscn")
 const FlashcardsScene := preload("res://scenes/flashcards.tscn")
+const WeekScene := preload("res://scenes/week.tscn")
 
 @onready var screens: MarginContainer = $Screens
 @onready var tab_bar: PanelContainer = $TabBar
@@ -67,13 +68,17 @@ func visit_for(id: String, review: bool) -> Dictionary:
 
 
 ## Turns the phone sideways for the editor and back for everything else.
+## The canvas follows the window (see Main.fit_canvas), so nothing else
+## changes size.
 func set_landscape(on: bool) -> void:
-	get_window().content_scale_size = Vector2i(1280, 720) if on else Vector2i(720, 1280)
 	if OS.has_feature("mobile"):
 		DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_LANDSCAPE if on else DisplayServer.SCREEN_PORTRAIT)
 	elif OS.has_feature("pc"):
 		DisplayServer.window_set_size(Vector2i(640, 360) if on else Vector2i(360, 640))
 	tab_bar.visible = not on
+	var main := get_tree().get_first_node_in_group("main")
+	if main:
+		main.fit_canvas()
 
 
 ## Flashcards: today's card review, or one lesson's cards to flip through.
@@ -83,6 +88,11 @@ func open_flashcards(review: bool, lesson: int) -> void:
 	page.review = review
 	page.lesson = lesson
 	screens.add_child(page)
+
+
+func open_week() -> void:
+	close_pages()
+	screens.add_child(WeekScene.instantiate())
 
 
 func open_judge_check() -> void:

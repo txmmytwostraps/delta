@@ -86,24 +86,24 @@ func solves_on(key: String) -> Array:
 
 # ---- settings kept on the phone ----
 
-## "finished through lesson N"
+## "finished through lesson N". Lives in the account settings, like the
+## daily set size, so the site and the phone agree.
 func course_lock() -> int:
-	return int(Store.get_value("course_lock", Bank.default_course_lock))
+	return Settings.course_lock()
 
 
 func set_course_lock(n: int) -> void:
-	Store.set_value("course_lock", n)
+	Settings.set_course_lock(n)
 	changed.emit()
 
 
-## New problems in the day's run. The site uses the bank's number; a
-## different number here changes the phone's set.
+## New problems in the day's run.
 func new_per_day() -> int:
-	return int(Store.get_value("new_per_day", Bank.new_per_day))
+	return Settings.new_per_day()
 
 
 func set_new_per_day(n: int) -> void:
-	Store.set_value("new_per_day", clampi(n, 1, 10))
+	Settings.set_new_per_day(n)
 	changed.emit()
 
 
@@ -213,7 +213,7 @@ func marker_for(t: Dictionary) -> String:
 	if t.locked:
 		return "[#]"
 	if t.done == t.total and t.total > 0:
-		return "[x]"
+		return "✓"
 	return "[>]" if t.done > 0 else "[ ]"
 
 

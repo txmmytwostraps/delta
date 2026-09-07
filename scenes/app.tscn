@@ -41,7 +41,7 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="Today" type="Button" parent="TabBar/Tabs"]
-custom_minimum_size = Vector2(0, 120)
+custom_minimum_size = Vector2(0, 112)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"Tab"
@@ -51,7 +51,7 @@ button_group = SubResource("tabs")
 text = "TODAY"
 
 [node name="Route" type="Button" parent="TabBar/Tabs"]
-custom_minimum_size = Vector2(0, 120)
+custom_minimum_size = Vector2(0, 112)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"Tab"
@@ -60,7 +60,7 @@ button_group = SubResource("tabs")
 text = "ROUTE"
 
 [node name="Practice" type="Button" parent="TabBar/Tabs"]
-custom_minimum_size = Vector2(0, 120)
+custom_minimum_size = Vector2(0, 112)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"Tab"
@@ -69,7 +69,7 @@ button_group = SubResource("tabs")
 text = "PRACTICE"
 
 [node name="Concepts" type="Button" parent="TabBar/Tabs"]
-custom_minimum_size = Vector2(0, 120)
+custom_minimum_size = Vector2(0, 112)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"Tab"
@@ -78,7 +78,7 @@ button_group = SubResource("tabs")
 text = "CONCEPTS"
 
 [node name="Profile" type="Button" parent="TabBar/Tabs"]
-custom_minimum_size = Vector2(0, 120)
+custom_minimum_size = Vector2(0, 112)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"Tab"

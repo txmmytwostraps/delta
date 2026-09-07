@@ -94,7 +94,7 @@ func options_for(i: int) -> Array:
 
 func _menu(i: int) -> Control:
 	var menu := VBoxContainer.new()
-	menu.add_theme_constant_override("separation", 8)
+	menu.add_theme_constant_override("separation", 16)
 	var options := options_for(i)
 	if options.is_empty():
 		var none := Label.new()

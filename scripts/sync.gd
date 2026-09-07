@@ -168,7 +168,9 @@ func pull() -> void:
 	var progress: Dictionary = await Supabase.call_api("GET", "/rest/v1/progress?select=problem_id,solved_at,fails,draft,draft_updated_at", null, token)
 	var reviews: Dictionary = await Supabase.call_api("GET", "/rest/v1/reviews?select=problem_id,topic,stage,due_on,step,clean_streak,last_result,reviewed_at", null, token)
 	var notes: Dictionary = await Supabase.call_api("GET", "/rest/v1/notes?select=problem_id,text,resolved,updated_at", null, token)
-	for reply in [progress, reviews, notes]:
+	var settings: Dictionary = await Supabase.call_api("GET", "/rest/v1/settings?select=course_lock,new_per_day,hint_overrides,updated_at", null, token)
+	var attempts: Dictionary = await Supabase.call_api("GET", "/rest/v1/attempts?select=problem_id,kind,result,at&order=at.asc&limit=5000", null, token)
+	for reply in [progress, reviews, notes, settings, attempts]:
 		if not reply.ok:
 			offline = reply.status == 0
 			message = reply.error
@@ -179,6 +181,8 @@ func pull() -> void:
 	_merge_progress(progress.data)
 	Reviews.replace_all(reviews.data)
 	Notes.merge(notes.data)
+	Settings.merge(settings.data[0] if settings.data is Array and settings.data.size() > 0 else {})
+	Scaffold.replace_attempts(attempts.data if attempts.data is Array else [])
 	# A topic finished on the other machine starts its review week here, and
 	# a topic started there puts its concept cards in the queue.
 	for concept in Bank.concepts:

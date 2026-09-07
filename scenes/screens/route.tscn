@@ -4,9 +4,9 @@
 [ext_resource type="Script" path="res://scenes/screens/route.gd" id="2"]
 
 [node name="Route" type="MarginContainer"]
-theme_override_constants/margin_left = 40
+theme_override_constants/margin_left = 32
 theme_override_constants/margin_top = 48
-theme_override_constants/margin_right = 40
+theme_override_constants/margin_right = 32
 theme_override_constants/margin_bottom = 0
 script = ExtResource("2")
 

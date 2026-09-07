@@ -125,7 +125,10 @@ func _insert(text: String) -> void:
 
 func _save_draft() -> void:
 	var p := Bank.problem(problem_id)
-	if code.text == str(p.get("starter", "")):
+	# Trailing spaces do not make a draft, like the site.
+	var re := RegEx.new()
+	re.compile("(?m)[ \\t]+$")
+	if re.sub(code.text, "", true) == re.sub(str(p.get("starter", "")), "", true):
 		Progress.clear_draft(problem_id)
 		saved.text = ""
 	else:
@@ -143,17 +146,29 @@ func _mark_error(line: int) -> void:
 
 # ---- hints, docs, the solution ----
 
+## Staged hints. Which may open depends on the topic's hint level and the
+## misses on this problem; locked ones say what unlocks them. Opening a
+## hint never counts as a miss, but it is logged for the weekly summary.
 func _render_hints(p: Dictionary) -> void:
+	for child in hints.get_children():
+		hints.remove_child(child)
+		child.queue_free()
 	var list: Array = p.get("hints", [])
 	if list.is_empty() and p.has("hint"):
 		list = [p.hint]
+	var level := Scaffold.level_for(str(p.get("concept", "")))
+	var misses := int(Progress.fails().get(problem_id, 0))
 	for i in list.size():
+		var open := Scaffold.hint_open(level, i, misses) or Progress.is_solved(problem_id)
 		var button := Button.new()
 		button.theme_type_variation = &"Link"
 		button.custom_minimum_size.y = 72
 		button.mouse_filter = Control.MOUSE_FILTER_PASS
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.text = "[+] HINT %d OF %d" % [i + 1, list.size()]
+		button.clip_text = true
+		button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		button.text = "[+] HINT %d OF %d" % [i + 1, list.size()] if open else "[#] HINT %d OF %d — %s" % [i + 1, list.size(), Scaffold.hint_lock_text(level).to_upper()]
+		button.disabled = not open
 		var text := Label.new()
 		text.theme_type_variation = &"Muted"
 		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -161,9 +176,17 @@ func _render_hints(p: Dictionary) -> void:
 		text.visible = false
 		button.pressed.connect(func() -> void:
 			text.visible = not text.visible
-			button.text = ("[-] " if text.visible else "[+] ") + button.text.substr(4))
+			button.text = ("[-] " if text.visible else "[+] ") + button.text.substr(4)
+			if text.visible:
+				Week.log_hint(problem_id, i))
 		hints.add_child(button)
 		hints.add_child(text)
+	if list.size() > 0:
+		var line := Label.new()
+		line.theme_type_variation = &"Small"
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		line.text = "HINTS: %s%s · CHANGE ON THE ROUTE" % [level.to_upper(), " (SET BY HAND)" if Scaffold.override_for(str(p.get("concept", ""))) != "" else ""]
+		hints.add_child(line)
 
 
 func _render_docs(p: Dictionary) -> void:
@@ -183,19 +206,20 @@ func _render_docs(p: Dictionary) -> void:
 
 func _render_solution_lock(p: Dictionary) -> void:
 	var misses := int(Progress.fails().get(problem_id, 0))
-	var unlocked := Progress.is_solved(problem_id) or misses >= Submission.UNLOCK_AFTER
+	var after := Submission.unlock_after(p)
+	var unlocked := Progress.is_solved(problem_id) or misses >= after
 	solution.text = str(p.get("solution", "")).replace("\t", "    ")
 	if unlocked:
 		solution_toggle.text = ("[-] " if solution.visible else "[+] ") + "REFERENCE SOLUTION"
 	else:
-		var left := Submission.UNLOCK_AFTER - misses
+		var left := after - misses
 		solution.visible = false
 		solution_toggle.text = "[#] REFERENCE SOLUTION — LOCKED · %d MORE MISS%s TO UNLOCK" % [left, "" if left == 1 else "ES"]
 
 
 func _toggle_solution() -> void:
 	var misses := int(Progress.fails().get(problem_id, 0))
-	if not (Progress.is_solved(problem_id) or misses >= Submission.UNLOCK_AFTER):
+	if not (Progress.is_solved(problem_id) or misses >= Submission.unlock_after(Bank.problem(problem_id))):
 		return
 	solution.visible = not solution.visible
 	_render_solution_lock(Bank.problem(problem_id))
@@ -217,6 +241,7 @@ func _on_run() -> void:
 	results.show_result(p, reply, outcome, true)
 	_mark_error(results.error_line)
 	_render_solution_lock(p)
+	_render_hints(p)
 	run_button.disabled = false
 
 

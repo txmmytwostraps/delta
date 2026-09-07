@@ -44,13 +44,13 @@ func _init() -> void:
 
 	# ---- labels ----
 	theme.set_color("font_color", "Label", TEXT)
-	_label(theme, "Heading", head, 72, TEXT)
+	_label(theme, "Heading", head, 52, TEXT)
 	_label(theme, "Heading2", head, 48, TEXT)
 	_label(theme, "Heading3", head_medium, 36, TEXT)
 	_label(theme, "RowTitle", head_medium, 30, TEXT)
 	_label(theme, "Big", head, 128, ACCENT)
-	_label(theme, "Eyebrow", spaced, 24, ACCENT)
-	_label(theme, "Small", spaced, 24, MUTED)
+	_label(theme, "Eyebrow", spaced, 22, ACCENT)
+	_label(theme, "Small", spaced, 22, MUTED)
 	_label(theme, "Muted", mono, 28, MUTED)
 	_label(theme, "Dim", mono, 28, DIM)
 	_label(theme, "Accent", mono, 28, ACCENT)
@@ -123,7 +123,7 @@ func _init() -> void:
 	theme.set_color("font_focus_color", "Row", TEXT)
 	theme.set_color("font_disabled_color", "Row", DIM)
 
-	_label(theme, "Code", mono, 24, TEXT)
+	_label(theme, "Code", mono, 28, TEXT)
 	theme.set_stylebox("normal", "TextEdit", _box(BG, LINE_STRONG, 2, 20, 20))
 	theme.set_stylebox("focus", "TextEdit", _box(BG, ACCENT, 2, 20, 20))
 	theme.set_stylebox("read_only", "TextEdit", _box(PANEL, LINE, 2, 20, 20))
@@ -136,11 +136,11 @@ func _init() -> void:
 
 	# Segmented control: equal boxes, the active one filled.
 	theme.set_type_variation("Segment", "Button")
-	_font_of(theme, "Segment", _spaced(mono_medium, 2), 24)
-	theme.set_stylebox("normal", "Segment", _box(CLEAR, LINE_STRONG, 2, 16, 24))
-	theme.set_stylebox("hover", "Segment", _box(CLEAR, LINE_STRONG, 2, 16, 24))
-	theme.set_stylebox("pressed", "Segment", _box(ACCENT, ACCENT, 2, 16, 24))
-	theme.set_stylebox("disabled", "Segment", _box(CLEAR, LINE, 2, 16, 24))
+	_font_of(theme, "Segment", _spaced(mono_medium, 2), 22)
+	theme.set_stylebox("normal", "Segment", _box(CLEAR, LINE_STRONG, 2, 16, 18))
+	theme.set_stylebox("hover", "Segment", _box(CLEAR, LINE_STRONG, 2, 16, 18))
+	theme.set_stylebox("pressed", "Segment", _box(ACCENT, ACCENT, 2, 16, 18))
+	theme.set_stylebox("disabled", "Segment", _box(CLEAR, LINE, 2, 16, 18))
 	theme.set_stylebox("focus", "Segment", StyleBoxEmpty.new())
 	theme.set_color("font_color", "Segment", MUTED)
 	theme.set_color("font_hover_color", "Segment", TEXT)
@@ -181,10 +181,10 @@ func _init() -> void:
 	theme.set_constant("line_spacing", "CodeEdit", 8)
 
 	# ---- panels ----
-	theme.set_stylebox("panel", "PanelContainer", _box(PANEL, LINE, 2, 32, 32))
+	theme.set_stylebox("panel", "PanelContainer", _box(PANEL, LINE, 2, 24, 24))
 	theme.set_stylebox("panel", "Panel", _box(PANEL, LINE, 2, 0, 0))
 	theme.set_type_variation("PanelActive", "PanelContainer")
-	theme.set_stylebox("panel", "PanelActive", _box(PANEL, ACCENT, 2, 32, 32))
+	theme.set_stylebox("panel", "PanelActive", _box(PANEL, ACCENT, 2, 24, 24))
 	theme.set_type_variation("BottomBar", "PanelContainer")
 	var bar := _box(PANEL, LINE, 0, 0, 0)
 	bar.border_width_top = 2

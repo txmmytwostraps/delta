@@ -4,9 +4,9 @@
 [ext_resource type="Script" path="res://scenes/screens/profile.gd" id="2"]
 
 [node name="Profile" type="MarginContainer"]
-theme_override_constants/margin_left = 40
+theme_override_constants/margin_left = 32
 theme_override_constants/margin_top = 48
-theme_override_constants/margin_right = 40
+theme_override_constants/margin_right = 32
 theme_override_constants/margin_bottom = 0
 script = ExtResource("2")
 
@@ -182,6 +182,12 @@ custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
 mouse_filter = 1
 text = "SYNC NOW"
+
+[node name="Week" type="Button" parent="Scroll/Body"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+mouse_filter = 1
+text = "THIS WEEK'S SUMMARY"
 
 [node name="JudgeCheck" type="Button" parent="Scroll/Body"]
 custom_minimum_size = Vector2(0, 88)

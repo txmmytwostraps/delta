@@ -3,37 +3,42 @@ class_name Submission
 ## adds a miss, a passing run marks the problem solved, every verdict is an
 ## attempt, and a review's first verdict decides its schedule.
 
-## Misses before the reference solution is unlocked.
-const UNLOCK_AFTER := 2
-
 
 ## page keeps state across the runs of one visit to a problem:
 ##   review: bool          opened from the review slot
 ##   review_recorded: bool the review's verdict has been decided
 ##   attempt_fails: int    misses during this visit
-## Returns { "pass": bool, "verdict": String, "note": String }.
+## Returns { "pass": bool, "verdict": String, "note": String }. The verdict
+## is the detail line; the results panel puts "Correct" or "Not yet" above.
 static func record(problem: Dictionary, reply: Dictionary, page: Dictionary) -> Dictionary:
 	var id: String = problem.id
 	var result: Dictionary = reply.result
 	if reply.timed_out:
-		return {"pass": false, "verdict": "[x] Could not run", "note": str(result.get("error", ""))}
+		return {"pass": false, "verdict": "Could not run", "note": str(result.get("error", ""))}
 	if result.status == "compile_error":
 		var v := _fail(id, page)
-		return v if not v.is_empty() else {"pass": false, "verdict": "[x] Did not compile · " + miss_text(id), "note": ""}
+		return v if not v.is_empty() else {"pass": false, "verdict": "Did not compile · " + miss_text(problem), "note": ""}
 	if result.status == "error":
 		var v := _fail(id, page)
-		return v if not v.is_empty() else {"pass": false, "verdict": "[x] " + miss_text(id), "note": str(result.get("error", ""))}
+		return v if not v.is_empty() else {"pass": false, "verdict": miss_text(problem), "note": str(result.get("error", ""))}
 	if result.status != "ok":
-		return {"pass": false, "verdict": "[x] Could not run", "note": str(result.get("error", ""))}
+		return {"pass": false, "verdict": "Could not run", "note": str(result.get("error", ""))}
 	if int(result.passed) < int(result.total):
 		var v := _fail(id, page)
-		return v if not v.is_empty() else {"pass": false, "verdict": "[x] Not yet · " + miss_text(id), "note": ""}
+		return v if not v.is_empty() else {"pass": false, "verdict": "Not yet · " + miss_text(problem), "note": ""}
 	var v := _solve(id, problem, page)
-	return v if not v.is_empty() else {"pass": true, "verdict": "[x] All tests pass · solved", "note": ""}
+	return v if not v.is_empty() else {"pass": true, "verdict": "All tests pass · solved", "note": ""}
 
 
-static func miss_text(id: String) -> String:
-	return "miss %d of %d" % [mini(int(Progress.fails().get(id, 0)), UNLOCK_AFTER), UNLOCK_AFTER]
+## Misses before the reference solution unlocks: 2, or 3 on a topic at the
+## minimal hint level.
+static func unlock_after(problem: Dictionary) -> int:
+	return Scaffold.solution_after(Scaffold.level_for(str(problem.get("concept", ""))))
+
+
+static func miss_text(problem: Dictionary) -> String:
+	var after := unlock_after(problem)
+	return "miss %d of %d" % [mini(int(Progress.fails().get(problem.id, 0)), after), after]
 
 
 ## Returns a review verdict when this run decided a review, else {}.
@@ -54,7 +59,7 @@ static func _solve(id: String, problem: Dictionary, page: Dictionary) -> Diction
 	if first:
 		Reviews.schedule_cards_if_started(str(problem.concept))
 	if first and Reviews.schedule_topic_if_cleared(str(problem.concept)) and verdict.is_empty():
-		return {"pass": true, "verdict": "[x] Topic cleared", "note": "Reviews for this topic start tomorrow: two a day for a week."}
+		return {"pass": true, "verdict": "Topic cleared", "note": "Reviews for this topic start tomorrow: two a day for a week."}
 	return verdict
 
 
@@ -62,6 +67,7 @@ static func _log(id: String, passed: bool, was_new: bool, page: Dictionary) -> D
 	var in_review: bool = bool(page.get("review", false))
 	var kind := "review" if in_review else ("new" if was_new else "practice")
 	Sync.insert_attempt(id, kind, "pass" if passed else "miss")
+	Scaffold.note_attempt(id, passed)
 	if not in_review or bool(page.get("review_recorded", false)):
 		return {}
 	page["review_recorded"] = true
@@ -69,6 +75,6 @@ static func _log(id: String, passed: bool, was_new: bool, page: Dictionary) -> D
 	Reviews.record_result(id, passed, clean)
 	if passed:
 		if clean:
-			return {"pass": true, "verdict": "[x] Review passed cleanly", "note": "Next review in a few days."}
-		return {"pass": true, "verdict": "[x] Passed after a miss", "note": "This one comes back tomorrow until it is solved cleanly twice."}
-	return {"pass": false, "verdict": "[x] Review missed · " + miss_text(id), "note": "It comes back tomorrow. You can keep working on it now; that will not change the schedule."}
+			return {"pass": true, "verdict": "Review passed cleanly", "note": "Next review in a few days."}
+		return {"pass": true, "verdict": "Passed after a miss", "note": "This one comes back tomorrow until it is solved cleanly twice."}
+	return {"pass": false, "verdict": "Review missed · " + miss_text(Bank.problem(id)), "note": "It comes back tomorrow. You can keep working on it now; that will not change the schedule."}

@@ -125,7 +125,7 @@ func _slot(slot: Dictionary, active: bool) -> Control:
 
 func _problem_row(id: String, prefix := "") -> Button:
 	var p := Bank.problem(id)
-	var button := UI.row("%s %s%s" % ["[x]" if Progress.is_solved(id) else "[ ]", prefix, p.get("title", id)])
+	var button := UI.row("%s %s%s" % ["✓" if Progress.is_solved(id) else "[ ]", prefix, p.get("title", id)])
 	button.pressed.connect(func() -> void: _open(id))
 	return button
 

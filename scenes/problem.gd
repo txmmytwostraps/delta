@@ -222,10 +222,10 @@ func _on_run() -> void:
 func _on_answered(correct: bool, reply: Dictionary) -> void:
 	var p := Bank.problem(problem_id)
 	var outcome := Submission.record(p, reply, visit)
-	if outcome.verdict.begins_with("[x] All tests pass"):
-		outcome.verdict = "[x] Right · solved"
-	elif outcome.verdict.begins_with("[x] Not yet"):
-		outcome.verdict = "[x] Not that one · " + Submission.miss_text(problem_id)
+	if outcome.verdict.begins_with("All tests pass"):
+		outcome.verdict = "Right · solved"
+	elif outcome.verdict.begins_with("Not yet"):
+		outcome.verdict = "Not that one · " + Submission.miss_text(p)
 	if not correct and outcome.note == "":
 		outcome.note = "The right answer is marked. Reset to try again."
 	instruction_text.visible = false

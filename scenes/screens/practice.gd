@@ -61,7 +61,7 @@ func _render_topic() -> void:
 	var i := 0
 	for p in t.list:
 		i += 1
-		var button := UI.row("%s %02d %s" % ["[x]" if Progress.is_solved(p.id) else "[ ]", i, p.title])
+		var button := UI.row("%s %02d %s" % ["✓" if Progress.is_solved(p.id) else "[ ]", i, p.title])
 		button.pressed.connect(func() -> void:
 			var app := get_tree().get_first_node_in_group("app")
 			if app:

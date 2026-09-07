@@ -22,6 +22,8 @@ Bank="*res://scripts/bank.gd"
 Progress="*res://scripts/progress.gd"
 Reviews="*res://scripts/reviews.gd"
 Notes="*res://scripts/notes.gd"
+Settings="*res://scripts/settings.gd"
+Scaffold="*res://scripts/scaffold.gd"
 Sync="*res://scripts/sync.gd"
 Grader="*res://scripts/grader.gd"
 

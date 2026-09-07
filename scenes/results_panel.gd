@@ -6,6 +6,7 @@ extends VBoxContainer
 ## problem page and the editor.
 
 var verdict := Label.new()
+var detail := Label.new()
 var count := Label.new()
 var note := Label.new()
 var tests := VBoxContainer.new()
@@ -23,6 +24,7 @@ func _init() -> void:
 	tests.add_theme_constant_override("separation", 12)
 	verdict.theme_type_variation = &"Heading3"
 	verdict.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	count.theme_type_variation = &"Small"
 	note.theme_type_variation = &"Muted"
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -35,7 +37,7 @@ func _init() -> void:
 	errors_label.text = "ERRORS"
 	errors.theme_type_variation = &"Error"
 	errors.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	for child in [verdict, count, note, tests, output_label, output, errors_label, errors]:
+	for child in [verdict, detail, count, note, tests, output_label, output, errors_label, errors]:
 		add_child(child)
 	clear()
 
@@ -43,6 +45,8 @@ func _init() -> void:
 func clear() -> void:
 	visible = false
 	verdict.text = ""
+	detail.text = ""
+	detail.visible = false
 	count.text = ""
 	note.text = ""
 	note.visible = false
@@ -78,8 +82,11 @@ func show_result(p: Dictionary, reply: Dictionary, outcome: Dictionary, with_row
 	clear()
 	visible = true
 	var result: Dictionary = reply.result
+	# A pass or a miss gets the large heading; the detail goes on the line under it.
 	verdict.theme_type_variation = &"Accent" if outcome.pass else &"Error"
-	verdict.text = outcome.verdict
+	verdict.text = "✓ Correct" if outcome.pass else "✗ Not yet"
+	detail.text = outcome.verdict
+	detail.visible = outcome.verdict != ""
 	note.text = outcome.note
 	note.visible = outcome.note != ""
 	var total: int = p.get("tests", []).size()
