@@ -97,10 +97,10 @@ func _rows(topics: Array, current: Dictionary) -> Array:
 					elif st.done:
 						when = "done %s%s" % [_short(str(st.done_at)), " · built in Godot" if st.godot_done else ""]
 					elif st.unlocked:
-						when = "%d of %d steps done · milestones come to the phone later" % [st.steps_done, int(m.steps)] if st.steps_done > 0 else "unlocked · milestones come to the phone later"
+						when = "continue · %d of %d steps done" % [st.steps_done, int(m.steps)] if st.steps_done > 0 else "unlocked · tap to start"
 					else:
 						when = "unlocks after %s · %d topic%s to go" % [t.title, st.topics_to_go, "" if st.topics_to_go == 1 else "s"]
-					rows.append({"kind": "planned" if planned else ("milestone_done" if st.done else "milestone"), "title": "Milestone %02d · %s" % [int(m.number), m.title], "sub": str(m.uses), "when": when, "badge": str(m.get("badge", "")) if st.done else ""})
+					rows.append({"kind": "planned" if planned else ("milestone_done" if st.done else "milestone"), "title": "Milestone %02d · %s" % [int(m.number), m.title], "sub": str(m.uses), "when": when, "badge": str(m.get("badge", "")) if st.done else "", "milestone": m.id if (not planned and st.unlocked and not Bank.milestone_data(m.id).is_empty()) else ""})
 	return rows
 
 
@@ -183,6 +183,11 @@ func _row(r: Dictionary, first: bool, last: bool) -> Control:
 			if app:
 				app.show_tab("practice")
 				app.screens.get_node("Practice").show_topic(r.concept), 0))
+	if r.get("milestone", "") != "":
+		card.add_child(UI.tap_area(func() -> void:
+			var app := get_tree().get_first_node_in_group("app")
+			if app:
+				app.open_milestone(r.milestone), 0))
 
 	var spacer := MarginContainer.new()
 	spacer.add_theme_constant_override("margin_bottom", 16)

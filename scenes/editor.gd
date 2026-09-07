@@ -12,6 +12,24 @@ var problem_id := ""
 var review := false
 ## Shared with the problem page: misses this visit, whether the review was decided.
 var visit: Dictionary = {}
+## A milestone step instead of a problem: the stage sits beside the code,
+## checks replace tests, and a pass marks the step done.
+var step_milestone := ""
+var step_index := -1
+
+const StagePanel := preload("res://scenes/stage_panel.gd")
+var _stage: VBoxContainer
+var _stage_timer: Timer
+
+
+## The problem, or the milestone step, this editor is for.
+func _item() -> Dictionary:
+	if step_milestone != "":
+		var data := Bank.milestone_data(step_milestone)
+		if step_index >= 0 and step_index < data.get("steps", []).size():
+			return data.steps[step_index]
+		return {}
+	return Bank.problem(problem_id)
 
 @onready var margin: MarginContainer = $Margin
 @onready var back: Button = $Margin/Column/TopBar/Back
@@ -36,10 +54,16 @@ var _keyboard := 0
 
 
 func _ready() -> void:
-	var p := Bank.problem(problem_id)
+	var p := _item()
+	if step_milestone != "":
+		problem_id = str(p.get("id", ""))
 	if visit.is_empty():
 		visit = {"review": review, "review_recorded": false, "attempt_fails": 0}
-	title.text = "%s · %s%s" % [Bank.topic_title(str(p.get("concept", ""))).to_upper(), str(p.get("title", "")).to_upper(), " · REVIEW" if review else ""]
+	if step_milestone != "":
+		var meta := Bank.milestone(step_milestone)
+		title.text = "MILESTONE %02d · STEP %d OF %d · %s" % [int(meta.get("number", 0)), step_index + 1, Bank.milestone_data(step_milestone).get("steps", []).size(), str(p.get("title", "")).to_upper()]
+	else:
+		title.text = "%s · %s%s" % [Bank.topic_title(str(p.get("concept", ""))).to_upper(), str(p.get("title", "")).to_upper(), " · REVIEW" if review else ""]
 	prompt.text = str(p.get("prompt", ""))
 	back.pressed.connect(close)
 	run_button.pressed.connect(_on_run)
@@ -51,7 +75,27 @@ func _ready() -> void:
 	_setup_code()
 	_render_hints(p)
 	_render_docs(p)
-	_render_solution_lock(p)
+	if step_milestone != "":
+		# The stage first in the side column; it follows the code as it is typed.
+		solution_toggle.visible = false
+		solution.visible = false
+		var scene: Dictionary = Bank.milestone_data(step_milestone).get("scene", {})
+		_stage = StagePanel.new()
+		_stage.setup(str(scene.get("kind", "move")), scene.get("watch", []), func() -> String: return code.text)
+		side.add_child(_stage)
+		side.move_child(_stage, 0)
+		_stage.set_buttons(p.get("scene", {}).get("buttons", []))
+		_stage_timer = Timer.new()
+		_stage_timer.one_shot = true
+		_stage_timer.wait_time = 0.9
+		_stage_timer.timeout.connect(func() -> void: _stage.refresh())
+		add_child(_stage_timer)
+		code.text_changed.connect(func() -> void:
+			if not _loading:
+				_stage_timer.start())
+		_stage.reset()
+	else:
+		_render_solution_lock(p)
 
 	_save_timer = Timer.new()
 	_save_timer.one_shot = true
@@ -99,7 +143,7 @@ func _process(_delta: float) -> void:
 # ---- the code ----
 
 func _setup_code() -> void:
-	var p := Bank.problem(problem_id)
+	var p := _item()
 	var highlighter := CodeHighlighter.new()
 	highlighter.number_color = Color("#a1ffe0")
 	highlighter.symbol_color = Color("#e8ecef")
@@ -124,7 +168,7 @@ func _insert(text: String) -> void:
 
 
 func _save_draft() -> void:
-	var p := Bank.problem(problem_id)
+	var p := _item()
 	# Trailing spaces do not make a draft, like the site.
 	var re := RegEx.new()
 	re.compile("(?m)[ \\t]+$")
@@ -219,17 +263,17 @@ func _render_solution_lock(p: Dictionary) -> void:
 
 func _toggle_solution() -> void:
 	var misses := int(Progress.fails().get(problem_id, 0))
-	if not (Progress.is_solved(problem_id) or misses >= Submission.unlock_after(Bank.problem(problem_id))):
+	if not (Progress.is_solved(problem_id) or misses >= Submission.unlock_after(_item())):
 		return
 	solution.visible = not solution.visible
-	_render_solution_lock(Bank.problem(problem_id))
+	_render_solution_lock(_item())
 
 
 # ---- running ----
 
 func _on_run() -> void:
-	var p := Bank.problem(problem_id)
-	if p.is_empty() or Grader.busy:
+	var p := _item()
+	if p.is_empty():
 		return
 	run_button.disabled = true
 	_mark_error(-1)
@@ -237,16 +281,23 @@ func _on_run() -> void:
 	var reply: Dictionary = await Grader.run(code.text, p)
 	if not is_inside_tree():
 		return
-	var outcome := Submission.record(p, reply, visit)
+	var outcome: Dictionary
+	if step_milestone != "":
+		outcome = MilestoneStep.record(Bank.milestone(step_milestone), Bank.milestone_data(step_milestone), step_index, reply)
+	else:
+		outcome = Submission.record(p, reply, visit)
 	results.show_result(p, reply, outcome, true)
 	_mark_error(results.error_line)
-	_render_solution_lock(p)
-	_render_hints(p)
+	if step_milestone != "":
+		_stage.refresh()
+	else:
+		_render_solution_lock(p)
+		_render_hints(p)
 	run_button.disabled = false
 
 
 func _on_reset() -> void:
-	var p := Bank.problem(problem_id)
+	var p := _item()
 	_loading = true
 	code.text = str(p.get("starter", ""))
 	_loading = false
@@ -262,5 +313,7 @@ func close() -> void:
 		_save_draft()
 	var app := get_tree().get_first_node_in_group("app")
 	queue_free()
-	if app:
+	if app and step_milestone != "":
+		app.open_milestone(step_milestone, step_index)
+	elif app:
 		app.open_problem(problem_id, review)

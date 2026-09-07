@@ -7,6 +7,7 @@ const EditorScene := preload("res://scenes/editor.tscn")
 const JudgeCheckScene := preload("res://scenes/judge_check.tscn")
 const FlashcardsScene := preload("res://scenes/flashcards.tscn")
 const WeekScene := preload("res://scenes/week.tscn")
+const MilestoneScene := preload("res://scenes/milestone.tscn")
 
 @onready var screens: MarginContainer = $Screens
 @onready var tab_bar: PanelContainer = $TabBar
@@ -87,6 +88,24 @@ func open_flashcards(review: bool, lesson: int) -> void:
 	var page := FlashcardsScene.instantiate()
 	page.review = review
 	page.lesson = lesson
+	screens.add_child(page)
+
+
+## A milestone page, at a step (0-based) or the first one not done.
+func open_milestone(id: String, step_at: int = -1) -> void:
+	close_pages()
+	var page := MilestoneScene.instantiate()
+	page.milestone_id = id
+	page.step_at = step_at
+	screens.add_child(page)
+
+
+## The typed editor for a milestone step, with the stage beside the code.
+func open_editor_step(milestone_id: String, step_index: int) -> void:
+	close_pages()
+	var page := EditorScene.instantiate()
+	page.step_milestone = milestone_id
+	page.step_index = step_index
 	screens.add_child(page)
 
 

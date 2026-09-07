@@ -96,8 +96,16 @@ func show_result(p: Dictionary, reply: Dictionary, outcome: Dictionary, with_row
 		_show_errors(reply.errors, "Parse error" if result.status == "compile_error" else "")
 		return
 
-	count.text = "%d / %d TESTS · %d MS" % [int(result.passed), int(result.total), reply.ms]
+	var checks := not p.has("signature")   # a milestone step: checks that read a member
+	count.text = "%d / %d %s · %d MS" % [int(result.passed), int(result.total), "CHECKS" if checks else "TESTS", reply.ms]
 	if not with_rows:
+		return
+	if checks:
+		for i in result.results.size():
+			var r: Dictionary = result.results[i]
+			var t: Dictionary = p.tests[i] if i < p.tests.size() else {}
+			tests.add_child(_check_row(t, r))
+		_show_errors(reply.errors, "")
 		return
 	var rtype := Fmt.return_type(str(p.get("signature", "")))
 	var print_only := Fmt.print_only(p)
@@ -113,6 +121,37 @@ func show_result(p: Dictionary, reply: Dictionary, outcome: Dictionary, with_row
 		output.visible = true
 		output.text = "\n".join(printed)
 	_show_errors(reply.errors, "")
+
+
+## A milestone check: its name, what it does in words, should be, and yours.
+func _check_row(t: Dictionary, r: Dictionary) -> Control:
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 4)
+	var head := Label.new()
+	head.theme_type_variation = &"Accent" if r.pass else &"Error"
+	head.clip_text = true
+	head.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	head.text = "%s %s" % ["✓" if r.pass else "✗", str(t.get("name", ""))]
+	column.add_child(head)
+	var indent := MarginContainer.new()
+	indent.add_theme_constant_override("margin_left", 36)
+	column.add_child(indent)
+	var details := VBoxContainer.new()
+	details.add_theme_constant_override("separation", 2)
+	indent.add_child(details)
+	var why := Label.new()
+	why.theme_type_variation = &"Detail"
+	why.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	why.text = MilestoneStep.describe(t)
+	details.add_child(why)
+	var got := Label.new()
+	got.theme_type_variation = &"DetailCode"
+	got.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+	var should: String = Fmt.to_json(r.get("expect", null)) if t.has("read") else Fmt.to_json(t.get("out", []))
+	var gave: String = str(r.error) if r.has("error") else (Fmt.to_json(r.get("got", null)) if t.has("read") else Fmt.to_json(r.get("out", [])))
+	got.text = "should be %s · your script gave %s" % [should, gave]
+	details.add_child(got)
+	return column
 
 
 ## One check: its name on one line, expected and yours indented below it.

@@ -17,6 +17,12 @@ var _shown: Node
 
 func _ready() -> void:
 	add_to_group("main")
+	# A panel box swallows touches by default, so a drag that starts on a
+	# card would never reach the list behind it. Every panel lets touches
+	# through instead; buttons inside still get theirs first.
+	get_tree().node_added.connect(func(node: Node) -> void:
+		if node is PanelContainer:
+			node.mouse_filter = Control.MOUSE_FILTER_PASS)
 	fit_canvas()
 	get_window().size_changed.connect(fit_canvas)
 	Auth.changed.connect(_refresh)

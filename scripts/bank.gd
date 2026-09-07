@@ -13,6 +13,7 @@ var site_commit := ""
 var cards: Array = []             # concept cards, in file order
 
 var _card_by_id: Dictionary = {}
+var _milestone_data: Dictionary = {}   # id -> the milestone file (intro, steps, godot)
 var _by_id: Dictionary = {}
 var _by_concept: Dictionary = {}   # concept -> Array of problems
 var _topic_by_concept: Dictionary = {}
@@ -41,6 +42,11 @@ func _ready() -> void:
 	for t in topics:
 		_topic_by_concept[t.concept] = t
 
+	var milestone_list: Variant = _read_json("res://bank/milestones.json")
+	if milestone_list is Array:
+		for m in milestone_list:
+			_milestone_data[m.id] = m
+
 	var card_list: Variant = _read_json("res://bank/cards.json")
 	if card_list is Array:
 		cards = card_list
@@ -50,6 +56,22 @@ func _ready() -> void:
 	var stamp := FileAccess.open("res://bank/COMMIT", FileAccess.READ)
 	if stamp:
 		site_commit = stamp.get_as_text().strip_edges()
+
+
+# ---- milestones ----
+
+## The route's entry for a milestone (number, title, after, steps, badge).
+func milestone(id: String) -> Dictionary:
+	for m in milestones:
+		if m.id == id:
+			return m
+	return {}
+
+
+## The milestone file: intro, the steps with their checks, the Godot list.
+## {} for a milestone the site has only planned.
+func milestone_data(id: String) -> Dictionary:
+	return _milestone_data.get(id, {})
 
 
 # ---- concept cards ----

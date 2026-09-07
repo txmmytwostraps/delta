@@ -22,6 +22,13 @@ writeFileSync(join(out, "route.json"), JSON.stringify({
   new_per_day: route.NEW_PER_DAY,
 }, null, 2) + "\n");
 
+// The milestones: one file per milestone, joined into one list.
+const mdir = join(site, "milestones");
+if (existsSync(mdir)) {
+  const milestones = readdirSync(mdir).filter((f) => f.endsWith(".json")).sort().map((f) => JSON.parse(readFileSync(join(mdir, f), "utf8")));
+  writeFileSync(join(out, "milestones.json"), JSON.stringify(milestones) + "\n");
+}
+
 // The concept cards, as they are.
 const cardsFile = join(site, "cards", "cards.json");
 if (existsSync(cardsFile)) copyFileSync(cardsFile, join(out, "cards.json"));

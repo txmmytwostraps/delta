@@ -203,7 +203,7 @@ func _on_reset() -> void:
 
 func _on_run() -> void:
 	var p := Bank.problem(problem_id)
-	if p.is_empty() or Grader.busy:
+	if p.is_empty():
 		return
 	run_button.disabled = true
 	instruction_text.visible = false
