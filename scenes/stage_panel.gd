@@ -45,7 +45,7 @@ func _init() -> void:
 func setup(kind: String, watch: Array, get_code: Callable) -> void:
 	stage.kind = kind
 	if stage.is_inside_tree():
-		stage.state = {"health": 100, "max_health": 100, "out": []} if kind == "health" else {"x": 0, "speed": 0}
+		stage.state = Stage.initial_state(kind)
 	_watch = watch if watch.size() > 0 else stage.watch_names()
 	_get_code = get_code
 
@@ -133,6 +133,7 @@ func replay(animate_last: bool) -> void:
 	if frames.is_empty():
 		return
 	frames[-1]["out"] = r.get("out", [])
+	frames[-1]["returned"] = r.get("returned", null) if _history.size() > 0 else null
 	var count := 0
 	if animate_last and _history.size() > 0:
 		var last: Dictionary = _history[-1]

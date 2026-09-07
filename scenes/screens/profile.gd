@@ -4,6 +4,7 @@ extends VBoxContainer
 ## with the version, About and Sign out.
 
 const Stage := preload("res://scenes/stage.gd")
+const Gallery := preload("res://scenes/gallery.gd")
 
 @onready var update_button: Button = $Margin/Scroll/Body/Update
 @onready var stage_host: VBoxContainer = $Margin/Scroll/Body/Top/Character/CharacterColumn/StageHost
@@ -27,10 +28,8 @@ func _ready() -> void:
 	_sticky = StickyHeader.attach($Margin, $Margin/Scroll)
 	sign_out_button.pressed.connect(_on_sign_out)
 	update_button.pressed.connect(func() -> void: OS.shell_open(Updates.latest_url))
-	gallery_button.pressed.connect(func() -> void:
-		var app := _app()
-		if app and app.has_method("open_gallery"):
-			app.open_gallery())
+	gallery_button.pressed.connect(func() -> void: _app().open_gallery())
+	about_button.pressed.connect(func() -> void: _app().open_about())
 	_stage = Stage.new()
 	_stage.kind = "move"
 	_stage.portrait = true
@@ -43,6 +42,7 @@ func _ready() -> void:
 	Progress.changed.connect(_refresh)
 	Reviews.changed.connect(_refresh)
 	Scaffold.changed.connect(_refresh)
+	Notes.changed.connect(_refresh)
 	Sync.pulled.connect(_refresh)
 	Sync.state_changed.connect(_refresh)
 	visibility_changed.connect(func() -> void:
@@ -60,18 +60,16 @@ func _refresh() -> void:
 	update_button.visible = Updates.update_available()
 	update_button.text = "UPDATE AVAILABLE · %s" % Updates.latest
 
-	# The character: the milestone robot, standing; its health once
-	# milestone 2 gives it some. The gallery arrives with the site's.
-	var ms := Progress.milestones()
-	var m2_done: bool = ms.size() > 1 and ms[1].done
-	_stage.set_state({"x": 300, "speed": 0})
+	# The character: the milestone robot with what the finished milestones
+	# gave it, read from the gallery's rule; its health once milestone 2 is done.
+	var has: Dictionary = Gallery.has_now(Progress.milestones())
+	_stage.set_state({"x": 300, "speed": 0, "has": has})
 	_clear(hp_host)
 	var hp := Label.new()
 	hp.theme_type_variation = &"Detail"
-	hp.text = "HP 100 / 100" if m2_done else "HP ?"
+	hp.text = "HP 100 / 100" if has.get("health", false) else "HP ?"
 	hp_host.add_child(hp)
-	hp_host.add_child(UI.bar(100 if m2_done else 0, 100, 6))
-	gallery_button.disabled = not _app() or not _app().has_method("open_gallery")
+	hp_host.add_child(UI.bar(100 if has.get("health", false) else 0, 100, 6))
 
 	var s := Progress.streak()
 	var x := Progress.xp_info()
@@ -103,6 +101,13 @@ func _refresh() -> void:
 	settings.add_child(hints)
 
 	_clear(more)
+	var open_notes: int = Notes.list().filter(func(n: Dictionary) -> bool: return not bool(n.get("resolved", false))).size()
+	var notes_row := UI.list_row("", "Notes", "%d unresolved ›" % open_notes if open_notes > 0 else "›")
+	notes_row.pressed.connect(func() -> void: _app().open_notes())
+	more.add_child(notes_row)
+	var stats_row := UI.list_row("", "Stats", "›")
+	stats_row.pressed.connect(func() -> void: _app().open_stats())
+	more.add_child(stats_row)
 	var week := UI.list_row("", "This week's summary", "›")
 	week.pressed.connect(func() -> void: _app().open_week())
 	more.add_child(week)

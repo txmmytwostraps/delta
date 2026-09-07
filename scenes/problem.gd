@@ -34,6 +34,9 @@ var visit: Dictionary = {}
 @onready var other_ways: Button = $Column/Scroll/Margin/Body/Work/ExpectRow/OtherWays
 @onready var other_menu: VBoxContainer = $Column/Scroll/Margin/Body/Work/OtherMenu
 @onready var hint_drawer: PanelContainer = $Column/HintDrawer
+@onready var nudge_button: Button = $Column/HintDrawer/HintColumn/NudgeRow/NudgeButton
+@onready var nudge_note: Label = $Column/HintDrawer/HintColumn/NudgeRow/NudgeNote
+@onready var nudge_reply: Label = $Column/HintDrawer/HintColumn/NudgeReply
 @onready var hint_label: Label = $Column/HintDrawer/HintColumn/HintLabel
 @onready var hint_text: Label = $Column/HintDrawer/HintColumn/HintText
 @onready var next_hint: Button = $Column/HintDrawer/HintColumn/HintRow/NextHint
@@ -77,6 +80,7 @@ func _ready() -> void:
 	run_button.pressed.connect(_on_run)
 	hint_button.pressed.connect(_toggle_hints)
 	next_hint.pressed.connect(func() -> void: _render_hint(true))
+	nudge_button.pressed.connect(_ask_nudge)
 	close_hint.pressed.connect(func() -> void: hint_drawer.visible = false)
 	type_button.pressed.connect(_open_editor)
 	other_ways.pressed.connect(func() -> void:
@@ -407,6 +411,43 @@ func _toggle_hints() -> void:
 	hint_drawer.visible = not hint_drawer.visible
 	if hint_drawer.visible:
 		_render_hint(_hint_at < 0)
+		_refresh_nudge_count()
+
+
+## "29 left today": the cap counted from the account's nudges.
+func _refresh_nudge_count() -> void:
+	if not Auth.is_signed_in():
+		nudge_note.text = "sign in to use"
+		return
+	var left: int = await Nudge.left_today()
+	if is_inside_tree() and left >= 0:
+		nudge_note.text = "%d left today" % maxi(0, left)
+
+
+## The built-in nudge: the problem, the code and the failing checks go to
+## the site's function; it points, never answers. Counts as a hint opened.
+func _ask_nudge() -> void:
+	var p := Bank.problem(problem_id)
+	var why := Nudge.blocked_reason(p)
+	if why != "":
+		nudge_note.text = why
+		return
+	nudge_button.disabled = true
+	nudge_note.text = "thinking…"
+	var opened := []
+	if _hint_at >= 0:
+		for i in _hint_at + 1:
+			opened.append(str(p.get("hints", [])[i]) if i < p.get("hints", []).size() else "")
+	var reply: Dictionary = await Nudge.ask(Nudge.payload(p, current_code(), _last.get("reply", {}), opened))
+	if not is_inside_tree():
+		return
+	nudge_button.disabled = false
+	if reply.ok:
+		nudge_reply.text = "Nudge · " + reply.text
+		nudge_reply.visible = true
+		nudge_note.text = "%d left today" % reply.remaining if reply.remaining >= 0 else ""
+	else:
+		nudge_note.text = reply.error
 
 
 ## The hint drawer: the next hint that may open at this topic's level.

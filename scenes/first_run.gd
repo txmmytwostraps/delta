@@ -41,6 +41,7 @@ func render() -> void:
 		dot.color = Color("#7ef0c2") if i == _at else Color("#344050")
 		dots.add_child(dot)
 	body.add_child(dots)
+	body.add_child(UI.link("ABOUT DELTA ›", func() -> void: app().open_about()))
 	var last := _at == PANES.size() - 1
 	set_action("START" if last else "NEXT ›", func() -> void:
 		if last:

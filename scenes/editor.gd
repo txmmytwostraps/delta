@@ -59,6 +59,11 @@ func _item() -> Dictionary:
 var results := ResultsPanel.new()
 ## The verdict after a run, over the bottom of the screen; see VerdictPanel.
 var verdict: VerdictPanel
+var _nudge_button: Button
+var _nudge_note: Label
+var _nudge_reply: Label
+var _nudge_text := ""
+var _last_reply: Dictionary = {}
 var _save_timer: Timer
 var _marked := -1
 var _loading := true
@@ -270,6 +275,29 @@ func _render_hints(p: Dictionary) -> void:
 		list = [p.hint]
 	var level := Scaffold.level_for(str(p.get("concept", "")))
 	var misses := int(Progress.fails().get(problem_id, 0))
+	if step_milestone == "" and variant.is_empty():
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		_nudge_button = Button.new()
+		_nudge_button.custom_minimum_size.y = 72
+		_nudge_button.mouse_filter = Control.MOUSE_FILTER_PASS
+		_nudge_button.text = "NUDGE"
+		_nudge_button.pressed.connect(_ask_nudge)
+		row.add_child(_nudge_button)
+		_nudge_note = Label.new()
+		_nudge_note.theme_type_variation = &"Detail"
+		_nudge_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_nudge_note.clip_text = true
+		_nudge_note.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		_nudge_note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(_nudge_note)
+		hints.add_child(row)
+		_nudge_reply = Label.new()
+		_nudge_reply.theme_type_variation = &"Prose"
+		_nudge_reply.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_nudge_reply.visible = _nudge_text != ""
+		_nudge_reply.text = _nudge_text
+		hints.add_child(_nudge_reply)
 	for i in list.size():
 		var open := Scaffold.hint_open(level, i, misses) or Progress.is_solved(problem_id)
 		var button := Button.new()
@@ -356,6 +384,7 @@ func _on_run() -> void:
 		outcome = Submission.record_drill(p, reply)
 	else:
 		outcome = Submission.record(p, reply, visit)
+	_last_reply = reply
 	# Laid out now, shown once the verdict panel has gone.
 	results.show_result(p, reply, outcome, true)
 	results.visible = false
@@ -384,6 +413,35 @@ func _after_verdict() -> void:
 	elif variant.is_empty():
 		_render_solution_lock(p)
 		_render_hints(p)
+
+
+## The built-in nudge, as on the problem page: the code as typed, the
+## failing checks and the hints opened go to the site's function.
+func _ask_nudge() -> void:
+	var p := _item()
+	var why := Nudge.blocked_reason(p)
+	if why != "":
+		_nudge_note.text = why
+		return
+	_nudge_button.disabled = true
+	_nudge_note.text = "thinking…"
+	var opened := []
+	for child in hints.get_children():
+		if child is Button and child.text.begins_with("[-]"):
+			var i := int(child.text.substr(9, 2).strip_edges()) - 1
+			if i >= 0 and i < p.get("hints", []).size():
+				opened.append(str(p.hints[i]))
+	var reply: Dictionary = await Nudge.ask(Nudge.payload(p, code.text, _last_reply, opened))
+	if not is_inside_tree():
+		return
+	_nudge_button.disabled = false
+	if reply.ok:
+		_nudge_text = "Nudge · " + reply.text
+		_nudge_reply.text = _nudge_text
+		_nudge_reply.visible = true
+		_nudge_note.text = "%d left today" % reply.remaining if reply.remaining >= 0 else ""
+	else:
+		_nudge_note.text = reply.error
 
 
 ## Opens the first hint that may open and is still closed.

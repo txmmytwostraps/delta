@@ -38,6 +38,10 @@ if (existsSync(mdir)) {
   writeFileSync(join(out, "milestones.json"), JSON.stringify(milestones) + "\n");
 }
 
+// The site's README, for About: the short part up to the "about-more" marker.
+const readme = join(site, "README.md");
+if (existsSync(readme)) copyFileSync(readme, join(out, "about.md"));
+
 // The concept cards, as they are.
 const cardsFile = join(site, "cards", "cards.json");
 if (existsSync(cardsFile)) copyFileSync(cardsFile, join(out, "cards.json"));

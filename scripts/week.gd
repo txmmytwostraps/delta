@@ -151,7 +151,7 @@ static func _hintlog() -> Array:
 	return Store.data["hintlog"]
 
 
-static func log_hint(problem_id: String, hint: int) -> void:
+static func log_hint(problem_id: String, hint: Variant) -> void:
 	var log := _hintlog()
 	log.append({"id": problem_id, "hint": hint, "at": Progress.now_iso()})
 	if log.size() > 500:

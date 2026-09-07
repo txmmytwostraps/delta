@@ -149,6 +149,30 @@ layout_mode = 2
 layout_mode = 2
 theme_override_constants/separation = 12
 
+[node name="NudgeRow" type="HBoxContainer" parent="Column/HintDrawer/HintColumn"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="NudgeButton" type="Button" parent="Column/HintDrawer/HintColumn/NudgeRow"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+mouse_filter = 1
+text = "NUDGE"
+
+[node name="NudgeNote" type="Label" parent="Column/HintDrawer/HintColumn/NudgeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"Detail"
+vertical_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="NudgeReply" type="Label" parent="Column/HintDrawer/HintColumn"]
+visible = false
+layout_mode = 2
+theme_type_variation = &"Prose"
+autowrap_mode = 3
+
 [node name="HintLabel" type="Label" parent="Column/HintDrawer/HintColumn"]
 layout_mode = 2
 theme_type_variation = &"Small"

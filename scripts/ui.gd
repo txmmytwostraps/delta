@@ -260,6 +260,8 @@ static func section(title: String) -> Label:
 	label.text = title.to_upper()
 	label.custom_minimum_size.y = 44
 	label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	label.clip_text = true
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	return label
 
 

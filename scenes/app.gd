@@ -16,6 +16,10 @@ const TopicProblemsScene := preload("res://scenes/topic_problems.tscn")
 const HintLevelsScene := preload("res://scenes/hint_levels.tscn")
 const RunDoneScene := preload("res://scenes/run_done.tscn")
 const FirstRunScene := preload("res://scenes/first_run.tscn")
+const GalleryScene := preload("res://scenes/gallery.tscn")
+const NotesScene := preload("res://scenes/notes_list.tscn")
+const StatsScene := preload("res://scenes/stats.tscn")
+const AboutScene := preload("res://scenes/about.tscn")
 
 const TAB_ICONS := {"Today": "today", "Route": "route", "Concepts": "concepts", "Profile": "profile"}
 const SLIDE := 0.22
@@ -193,6 +197,22 @@ func open_hint_levels() -> void:
 
 func open_first_run() -> void:
 	_open_page(FirstRunScene.instantiate())
+
+
+func open_gallery() -> void:
+	_open_page(GalleryScene.instantiate())
+
+
+func open_notes() -> void:
+	_open_page(NotesScene.instantiate())
+
+
+func open_stats() -> void:
+	_open_page(StatsScene.instantiate())
+
+
+func open_about() -> void:
+	_open_page(AboutScene.instantiate())
 
 
 func visit_for(id: String, review: bool) -> Dictionary:
