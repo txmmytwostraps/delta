@@ -1,0 +1,12 @@
+# Godot editor cache
+.godot/
+
+# Build output
+build/
+*.apk
+*.aab
+*.keystore
+
+# Local notes and source artwork
+delta-app-plan.md
+delta-logo/

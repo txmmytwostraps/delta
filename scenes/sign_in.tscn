@@ -1,0 +1,84 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/sign_in.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/icon/mark.svg" id="2"]
+
+[node name="SignIn" type="MarginContainer"]
+theme_override_constants/margin_left = 56
+theme_override_constants/margin_top = 56
+theme_override_constants/margin_right = 56
+theme_override_constants/margin_bottom = 56
+script = ExtResource("1")
+
+[node name="Column" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Mark" type="TextureRect" parent="Column"]
+custom_minimum_size = Vector2(96, 96)
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("2")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="Column"]
+layout_mode = 2
+theme_type_variation = &"Heading"
+text = "DELTA"
+horizontal_alignment = 1
+
+[node name="Tagline" type="Label" parent="Column"]
+layout_mode = 2
+theme_type_variation = &"Muted"
+text = "GDScript practice, on your phone. Same account and progress as the site."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Gap" type="Control" parent="Column"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+
+[node name="GitHubButton" type="Button" parent="Column"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+theme_type_variation = &"Primary"
+text = "SIGN IN WITH GITHUB"
+
+[node name="Or" type="Label" parent="Column"]
+layout_mode = 2
+theme_type_variation = &"Small"
+text = "OR WITH EMAIL"
+horizontal_alignment = 1
+
+[node name="Email" type="LineEdit" parent="Column"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+placeholder_text = "email"
+virtual_keyboard_type = 5
+
+[node name="Password" type="LineEdit" parent="Column"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+placeholder_text = "password"
+virtual_keyboard_type = 6
+secret = true
+
+[node name="EmailButton" type="Button" parent="Column"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+text = "SIGN IN"
+
+[node name="Note" type="Label" parent="Column"]
+layout_mode = 2
+theme_type_variation = &"Error"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Help" type="Label" parent="Column"]
+layout_mode = 2
+theme_type_variation = &"Dim"
+text = "No account yet? Create one on the site first."
+horizontal_alignment = 1
+autowrap_mode = 3

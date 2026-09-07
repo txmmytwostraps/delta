@@ -1,0 +1,45 @@
+; Engine configuration file.
+; Godot 4.7.2 — Delta
+
+config_version=5
+
+[application]
+
+config/name="Delta"
+config/version="0.1.0"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+boot_splash/bg_color=Color(0.0431373, 0.0509804, 0.0627451, 1)
+boot_splash/show_image=false
+config/icon="res://icon.png"
+
+[autoload]
+
+Supabase="*res://scripts/supabase.gd"
+Auth="*res://scripts/auth.gd"
+
+[display]
+
+; Designed at 720x1280 (a 360x640 phone at 2x); on a taller phone the
+; canvas grows, it never stretches.
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/size/window_width_override=360
+window/size/window_height_override=640
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=1
+
+[gui]
+
+theme/custom="res://theme/delta.tres"
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true

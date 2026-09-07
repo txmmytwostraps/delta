@@ -1,0 +1,29 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/screens/screen_header.tscn" id="1"]
+
+[node name="Route" type="MarginContainer"]
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 48
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 0
+
+[node name="Scroll" type="ScrollContainer" parent="."]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Body" type="VBoxContainer" parent="Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 28
+
+[node name="Header" parent="Scroll/Body" instance=ExtResource("1")]
+layout_mode = 2
+eyebrow = "The course"
+title = "Route"
+
+[node name="Placeholder" type="Label" parent="Scroll/Body"]
+layout_mode = 2
+theme_type_variation = &"Dim"
+text = "The path through the topics will appear here."
+autowrap_mode = 3

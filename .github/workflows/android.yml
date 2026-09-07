@@ -1,0 +1,123 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK pieces Godot needs
+        run: |
+          set -e
+          sdk="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$sdk" --licenses > /dev/null || true
+          "$sdk" --install "platform-tools" "build-tools;35.0.1" "platforms;android-35" > /dev/null
+
+      # The full template pack is ~1.3 GB, so keep it cached between runs.
+      - name: Cache Godot and the Android export templates
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-android-v1
+
+      - name: Download Godot and the Android export templates
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          set -e
+          mkdir -p ~/godot ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+          curl -sSL -o godot.zip "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip -d ~/godot
+          mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot
+          chmod +x ~/godot/godot
+          curl -sSL -o templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -j -q templates.tpz \
+            templates/android_debug.apk templates/android_release.apk templates/version.txt \
+            -d ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          rm -f godot.zip templates.tpz
+
+      # Godot reads the SDK locations from its editor settings file.
+      - name: Point Godot at the SDKs
+        run: |
+          set -e
+          mkdir -p ~/.config/godot
+          cat > ~/.config/godot/editor_settings-4.7.tres <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/debug_keystore = "$PWD/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+
+      # The debug key comes from the DEBUG_KEYSTORE_BASE64 secret so every
+      # build installs over the last one. Without the secret a fresh key is
+      # made, and the phone then wants the old build uninstalled first.
+      - name: Debug signing key
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          set -e
+          if [ -n "$DEBUG_KEYSTORE_BASE64" ]; then
+            echo "$DEBUG_KEYSTORE_BASE64" | base64 -d > debug.keystore
+          else
+            keytool -genkeypair -v -keystore debug.keystore -storepass android -keypass android \
+              -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US" > /dev/null 2>&1
+          fi
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$PWD/debug.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+
+      - name: Import the project
+        run: ~/godot/godot --headless --path . --import --quit || true
+
+      - name: Export the debug APK
+        run: |
+          set -e
+          mkdir -p build
+          ~/godot/godot --headless --path . --export-debug Android build/delta-debug.apk
+          test -f build/delta-debug.apk
+          ls -la build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: delta-debug
+          path: build/delta-debug.apk
+
+      # A rolling pre-release, so the newest build always sits at one address:
+      # https://github.com/txmmytwostraps/delta/releases/download/debug/delta-debug.apk
+      - name: Publish as the "debug" pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          gh release delete debug --yes --cleanup-tag || true
+          gh release create debug build/delta-debug.apk --prerelease \
+            --title "Debug build" \
+            --notes "Latest build of main. Open delta-debug.apk on the phone to install it."
