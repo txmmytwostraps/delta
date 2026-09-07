@@ -7,6 +7,8 @@ var problems: Array = []          # full problem Dictionaries in site order
 var topics: Array = []            # route topics, in lesson order
 var milestones: Array = []
 var lessons: Array = []
+## The lessons grouped into stages for the Route: [{ title, from, to }].
+var stages: Array = []
 var default_course_lock := 20
 var new_per_day := 5
 var site_commit := ""
@@ -37,6 +39,7 @@ func _ready() -> void:
 		topics = route.get("topics", [])
 		milestones = route.get("milestones", [])
 		lessons = route.get("lessons", [])
+		stages = route.get("stages", [])
 		default_course_lock = int(route.get("default_course_lock", 20))
 		new_per_day = int(route.get("new_per_day", 5))
 	for t in topics:

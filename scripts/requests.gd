@@ -1,0 +1,32 @@
+class_name Requests
+## "Request more": the house style for problems, as a prompt for writing
+## more of them, filled in for one topic. The site's content-rules.js,
+## word for word; the Route copies it to the clipboard.
+
+const CONTENT_RULES := """- Follow the GDQuest course "Learn GDScript From Zero" in lesson order: a problem may only use concepts from its own lesson or earlier ones.
+- One recurring character: a robot with health, level and max_health. Prompts give a goal with a little context, not a bare instruction.
+- A beginner (difficulty 1) prompt states the goal in game terms and the values only, never a line of code in English (no "create a variable", "set it to", "return it"); which variables and which operation go in hint 1.
+- Every test has a plain-English name saying what is verified (e.g. "Exactly 20 leaves 0", "The message is printed").
+- A problem with no inputs is a function called run(), as in the course; a problem with inputs is a function named after what it does (double, take_hit, is_even), and the goal says so.
+- No type hints anywhere (no "x: int", no ":=", no "-> int"), except that the tested function may keep its return type where it matters.
+- Starters extend existing code where that fits; a fix-the-error starter must not compile, a fix-the-bug starter runs but gives wrong answers.
+- 2 to 4 staged hints that nudge without giving the answer; the last hint may name the exact line to write.
+- A "docs" list of the built-ins the problem uses, each with a one-line "what".
+- Backticks around code words; write "the number `20`" when a literal is meant.
+- Print-style problems check printed lines; return-style problems check the returned value; problems that name a variable use "require_names" and "once_only" strictly.
+- Ids are <prefix>-<nnn>, one JSON file per problem, with fields: id, title, concept, difficulty (0 novice, 1 beginner), prompt, signature, fn (the function the tests call), starter, tests[{name,args,expect,out?}], hints[], docs[], solution."""
+
+
+## t: a topic from Progress.route_topics() (title, concept, lesson, list).
+static func prompt_for(t: Dictionary, batch: int = 10) -> String:
+	var lines := [
+		"Write %d new practice problems for the topic \"%s\" (concept id \"%s\", course lesson %d) in this repository's house style. Put each in problems/<id>.json, run node tools/build-index.js and the judge validator, and show me the list by id and title before committing." % [batch, str(t.title), str(t.concept), int(t.lesson)],
+		"",
+		"House style:",
+		CONTENT_RULES,
+		"",
+		"Existing titles in this topic, do not repeat them:",
+	]
+	for p in t.get("list", []):
+		lines.append("- %s" % str(p.title))
+	return "\n".join(lines)

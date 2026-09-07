@@ -10,12 +10,13 @@ extends SceneTree
 ## phone at 2x, so every number here is twice its size on the site.
 
 const BG := Color("#0b0d10")
-const PANEL := Color("#10141a")
-const LINE := Color("#1c2229")
-const LINE_STRONG := Color("#2a323b")
-const MUTED := Color("#8a95a0")
-const DIM := Color("#4e5a66")
-const TEXT := Color("#e8ecef")
+const PANEL := Color("#12181f")
+const LINE := Color("#232b34")
+const LINE_STRONG := Color("#344050")
+const MUTED := Color("#a3adb8")
+const DIM := Color("#6b7885")
+const TEXT := Color("#eef1f4")
+const BLUE := Color("#6dbdff")
 const ACCENT := Color("#7ef0c2")
 const ACCENT_HOVER := Color("#b3f7dc")
 const MILESTONE := Color("#e2b153")
@@ -36,6 +37,7 @@ func _init() -> void:
 	var mono_semibold := _font("IBMPlexMono-SemiBold.ttf")
 	var head := _weight(_font("SpaceGrotesk-Variable.ttf"), 700)
 	var head_medium := _weight(_font("SpaceGrotesk-Variable.ttf"), 500)
+	var prose := _weight(_font("SpaceGrotesk-Variable.ttf"), 400)
 	var spaced := _spaced(mono_medium, 3)
 
 	if mono:
@@ -56,6 +58,11 @@ func _init() -> void:
 	_label(theme, "Accent", mono, 28, ACCENT)
 	_label(theme, "Amber", mono, 28, MILESTONE)
 	_label(theme, "Error", mono, 26, ERROR)
+	# Prose (goals, hints, explainers, cards, instructions) is Space Grotesk
+	# at 14 points; code, labels, numbers, rows and the editor stay mono.
+	# The text size setting scales these two only (see Main).
+	_label(theme, "Prose", prose, 28, TEXT)
+	_label(theme, "ProseMuted", prose, 28, MUTED)
 
 	# ---- buttons: outlined by default, filled for the main action ----
 	_font_of(theme, "Button", mono_medium, 26)
@@ -98,7 +105,7 @@ func _init() -> void:
 
 	# Bottom tabs: a bar of accent along the top marks the active one.
 	theme.set_type_variation("Tab", "Button")
-	_font_of(theme, "Tab", _spaced(mono_medium, 2), 22)
+	_font_of(theme, "Tab", _spaced(mono_medium, 1), 22)
 	theme.set_stylebox("normal", "Tab", _tab_box(CLEAR))
 	theme.set_stylebox("hover", "Tab", _tab_box(CLEAR))
 	theme.set_stylebox("pressed", "Tab", _tab_box(ACCENT))
@@ -109,19 +116,31 @@ func _init() -> void:
 	theme.set_color("font_hover_pressed_color", "Tab", ACCENT)
 	theme.set_color("font_focus_color", "Tab", MUTED)
 
-	# A full-width row in a list (topics, problems).
+	# A row in a list: 52 points tall, a hairline under it, nothing else. Only
+	# the current row (RowCurrent) gets the accent bar down its left edge and
+	# the panel background.
 	theme.set_type_variation("Row", "Button")
-	_font_of(theme, "Row", mono, 26)
-	theme.set_stylebox("normal", "Row", _box(PANEL, LINE, 2, 28, 26))
-	theme.set_stylebox("hover", "Row", _box(PANEL, LINE_STRONG, 2, 28, 26))
-	theme.set_stylebox("pressed", "Row", _box(PANEL, ACCENT, 2, 28, 26))
-	theme.set_stylebox("disabled", "Row", _box(PANEL, LINE, 2, 28, 26))
+	_font_of(theme, "Row", mono, 28)
+	theme.set_stylebox("normal", "Row", _row_box(BG, CLEAR))
+	theme.set_stylebox("hover", "Row", _row_box(BG, CLEAR))
+	theme.set_stylebox("pressed", "Row", _row_box(PANEL, CLEAR))
+	theme.set_stylebox("disabled", "Row", _row_box(BG, CLEAR))
+	theme.set_stylebox("focus", "Row", StyleBoxEmpty.new())
 	theme.set_color("font_color", "Row", TEXT)
 	theme.set_color("font_hover_color", "Row", TEXT)
 	theme.set_color("font_pressed_color", "Row", ACCENT)
 	theme.set_color("font_hover_pressed_color", "Row", ACCENT)
 	theme.set_color("font_focus_color", "Row", TEXT)
 	theme.set_color("font_disabled_color", "Row", DIM)
+	theme.set_type_variation("RowCurrent", "Row")
+	theme.set_stylebox("normal", "RowCurrent", _row_box(PANEL, ACCENT))
+	theme.set_stylebox("hover", "RowCurrent", _row_box(PANEL, ACCENT))
+	theme.set_stylebox("pressed", "RowCurrent", _row_box(PANEL, ACCENT))
+	theme.set_stylebox("disabled", "RowCurrent", _row_box(PANEL, ACCENT))
+
+	# A tile in a grid of numbers (Profile), and a stat's big value.
+	_label(theme, "Name", head, 44, TEXT)
+	_label(theme, "Number", head, 56, TEXT)
 
 	_label(theme, "Code", mono, 28, TEXT)
 	theme.set_stylebox("normal", "TextEdit", _box(BG, LINE_STRONG, 2, 20, 20))
@@ -211,10 +230,19 @@ func _init() -> void:
 	theme.set_stylebox("panel", "Panel", _box(PANEL, LINE, 2, 0, 0))
 	theme.set_type_variation("PanelActive", "PanelContainer")
 	theme.set_stylebox("panel", "PanelActive", _box(PANEL, ACCENT, 2, 24, 24))
+	# The bands a screen sits between: the top bar and the tab bar, panel
+	# background with a 2-unit edge.
 	theme.set_type_variation("BottomBar", "PanelContainer")
-	var bar := _box(PANEL, LINE, 0, 0, 0)
+	var bar := _box(PANEL, LINE_STRONG, 0, 0, 0)
 	bar.border_width_top = 2
 	theme.set_stylebox("panel", "BottomBar", bar)
+	theme.set_type_variation("TopBar", "PanelContainer")
+	var top := _box(PANEL, LINE_STRONG, 0, 0, 0)
+	top.border_width_bottom = 2
+	theme.set_stylebox("panel", "TopBar", top)
+	# An amber tile across the route: a milestone.
+	theme.set_type_variation("Tile", "PanelContainer")
+	theme.set_stylebox("panel", "Tile", _box(Color("#3d3220"), MILESTONE, 2, 24, 20))
 	# A page that sits over a screen and hides it.
 	theme.set_type_variation("Backdrop", "PanelContainer")
 	theme.set_stylebox("panel", "Backdrop", _box(BG, BG, 0, 0, 0))
@@ -260,6 +288,16 @@ func _box(bg: Color, border: Color, border_width: int, pad_x: int, pad_y: int) -
 	box.content_margin_right = pad_x
 	box.content_margin_top = pad_y
 	box.content_margin_bottom = pad_y
+	return box
+
+
+## A list row: a hairline under it; a bar down the left edge for the current one.
+func _row_box(bg: Color, edge: Color) -> StyleBoxFlat:
+	var box := _box(bg, LINE, 0, 24, 0)
+	box.border_width_bottom = 2
+	if edge.a > 0.0:
+		box.border_width_left = 6
+		box.border_color = edge
 	return box
 
 

@@ -13,8 +13,8 @@ var milestone_id := "m1"
 ## The step to show, 0-based; -1 for the first one not done yet.
 var step_at := -1
 
-@onready var back: Button = $Column/TopMargin/TopBar/Back
-@onready var meta_label: Label = $Column/TopMargin/TopBar/Meta
+@onready var back: Button = $Column/TopBand/TopMargin/TopBar/Back
+@onready var meta_label: Label = $Column/TopBand/TopMargin/TopBar/Meta
 @onready var scroll: ScrollContainer = $Column/Scroll
 @onready var steps_row: HBoxContainer = $Column/Scroll/Margin/Body/Steps
 @onready var banner: Label = $Column/Scroll/Margin/Body/Banner
@@ -170,6 +170,7 @@ func show_godot() -> void:
 	t.text = "BUILD IT IN GODOT"
 	godot_body.add_child(t)
 	var intro := Label.new()
+	intro.theme_type_variation = &"Prose"
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	intro.text = "Now make the same robot in a real Godot project on your machine. Tick each line as you do it. The list is the whole build: nothing here needs anything you have not written above."
 	godot_body.add_child(intro)
@@ -260,7 +261,7 @@ func _render_hints() -> void:
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.text = "[+] HINT %d OF %d" % [i + 1, list.size()]
 		var text := Label.new()
-		text.theme_type_variation = &"Muted"
+		text.theme_type_variation = &"Prose"
 		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		text.text = str(list[i]).replace("`", "")
 		text.visible = false
@@ -380,6 +381,9 @@ func _on_run() -> void:
 	instruction_text.visible = true
 	_render_steps()
 	run_button.disabled = false
+	var app := get_tree().get_first_node_in_group("app")
+	if app:
+		app.buzz(outcome.pass)
 	if outcome.pass:
 		var last: bool = step_at >= data.steps.size() - 1
 		verdict.show_pass(ResultsPanel.pass_line(step, reply, outcome), "GODOT LIST ›" if last else "NEXT STEP ›")

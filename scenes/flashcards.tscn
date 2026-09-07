@@ -10,23 +10,27 @@ script = ExtResource("1")
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="TopMargin" type="MarginContainer" parent="Column"]
+[node name="TopBand" type="PanelContainer" parent="Column"]
+layout_mode = 2
+theme_type_variation = &"TopBar"
+
+[node name="TopMargin" type="MarginContainer" parent="Column/TopBand"]
 layout_mode = 2
 theme_override_constants/margin_left = 32
 theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 32
 theme_override_constants/margin_bottom = 8
 
-[node name="TopBar" type="HBoxContainer" parent="Column/TopMargin"]
+[node name="TopBar" type="HBoxContainer" parent="Column/TopBand/TopMargin"]
 layout_mode = 2
 
-[node name="Back" type="Button" parent="Column/TopMargin/TopBar"]
+[node name="Back" type="Button" parent="Column/TopBand/TopMargin/TopBar"]
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
 theme_type_variation = &"Link"
 text = "‹ BACK"
 
-[node name="Meta" type="Label" parent="Column/TopMargin/TopBar"]
+[node name="Meta" type="Label" parent="Column/TopBand/TopMargin/TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"Small"
@@ -61,7 +65,7 @@ text = "CARD 1 OF 4"
 
 [node name="Front" type="Label" parent="Column/Scroll/Margin/Body"]
 layout_mode = 2
-theme_type_variation = &"Heading2"
+theme_type_variation = &"Prose"
 text = "Front"
 autowrap_mode = 3
 
@@ -77,6 +81,7 @@ autowrap_mode = 3
 
 [node name="What" type="Label" parent="Column/Scroll/Margin/Body/Back"]
 layout_mode = 2
+theme_type_variation = &"Prose"
 autowrap_mode = 3
 
 [node name="HowPanel" type="PanelContainer" parent="Column/Scroll/Margin/Body/Back"]
@@ -89,7 +94,7 @@ autowrap_mode = 3
 
 [node name="Example" type="Label" parent="Column/Scroll/Margin/Body/Back"]
 layout_mode = 2
-theme_type_variation = &"Muted"
+theme_type_variation = &"Prose"
 autowrap_mode = 3
 
 [node name="MistakeLabel" type="Label" parent="Column/Scroll/Margin/Body/Back"]
@@ -99,7 +104,7 @@ text = "THE MISTAKE BEGINNERS MAKE"
 
 [node name="Mistake" type="Label" parent="Column/Scroll/Margin/Body/Back"]
 layout_mode = 2
-theme_type_variation = &"Muted"
+theme_type_variation = &"Prose"
 autowrap_mode = 3
 
 [node name="Summary" type="Label" parent="Column/Scroll/Margin/Body"]

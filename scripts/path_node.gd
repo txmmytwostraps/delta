@@ -1,16 +1,16 @@
 extends Control
 ## One stop on the route's vertical path: the line running through, and a
-## node whose look says what the stop is.
+## node whose shape says what the stop is, like the site's: a filled square
+## done, a ring for the current one, a hollow square ahead, a dim dot locked.
 
-## todo | current | done | locked | milestone | milestone_done | planned
+## todo | current | done | locked | empty
 var kind := "todo"
 var first := false
 var last := false
 
-const LINE := Color("#2a323b")
+const LINE := Color("#344050")
 const ACCENT := Color("#7ef0c2")
-const DIM := Color("#4e5a66")
-const AMBER := Color("#e2b153")
+const DIM := Color("#6b7885")
 const BG := Color("#0b0d10")
 
 
@@ -25,31 +25,22 @@ func _ready() -> void:
 
 func _draw() -> void:
 	var x := size.x / 2.0
-	var y := size.y / 2.0
+	var y := minf(size.y / 2.0, 52.0)   # on the row's first line, even under a card
 	var top := y if first else 0.0
 	var bottom := y if last else size.y
 	draw_line(Vector2(x, top), Vector2(x, bottom), LINE, 2.0)
-	var r := 12.0
+	var r := 11.0
 	match kind:
 		"done":
 			draw_rect(Rect2(x - r, y - r, 2 * r, 2 * r), ACCENT)
 		"current":
-			draw_rect(Rect2(x - r, y - r, 2 * r, 2 * r), BG)
-			draw_rect(Rect2(x - r, y - r, 2 * r, 2 * r), ACCENT, false, 3.0)
-			draw_rect(Rect2(x - 5, y - 5, 10, 10), ACCENT)
+			draw_circle(Vector2(x, y), r + 3, BG)
+			draw_arc(Vector2(x, y), r + 1, 0.0, TAU, 32, ACCENT, 3.0)
+			draw_circle(Vector2(x, y), 4.0, ACCENT)
 		"locked":
-			draw_rect(Rect2(x - r, y - r, 2 * r, 2 * r), BG)
-			draw_rect(Rect2(x - r, y - r, 2 * r, 2 * r), DIM, false, 2.0)
-		"milestone", "milestone_done", "planned":
-			var d := r + 4
-			var points := PackedVector2Array([Vector2(x, y - d), Vector2(x + d, y), Vector2(x, y + d), Vector2(x - d, y)])
-			if kind == "milestone_done":
-				draw_colored_polygon(points, ACCENT)
-			elif kind == "milestone":
-				draw_colored_polygon(points, AMBER)
-			else:
-				draw_colored_polygon(points, BG)
-				draw_polyline(points + PackedVector2Array([points[0]]), AMBER, 2.0)
+			draw_circle(Vector2(x, y), 5.0, DIM)
+		"empty":
+			draw_circle(Vector2(x, y), 4.0, LINE)
 		_:
 			draw_rect(Rect2(x - r, y - r, 2 * r, 2 * r), BG)
 			draw_rect(Rect2(x - r, y - r, 2 * r, 2 * r), LINE, false, 2.0)

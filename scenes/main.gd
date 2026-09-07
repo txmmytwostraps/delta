@@ -25,6 +25,9 @@ func _ready() -> void:
 			node.mouse_filter = Control.MOUSE_FILTER_PASS)
 	fit_canvas()
 	get_window().size_changed.connect(fit_canvas)
+	Settings.changed.connect(apply_text_scale)
+	Sync.pulled.connect(apply_text_scale)
+	apply_text_scale()
 	Auth.changed.connect(_refresh)
 	if not Auth.is_restored:
 		await Auth.restored
@@ -50,6 +53,19 @@ func fit_canvas() -> void:
 		var landscape := px.x > px.y
 		window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
 		window.content_scale_size = Vector2i(1280, 720) if landscape else Vector2i(720, 1280)
+
+
+## Text size S / M / L: the prose styles scale; code, labels and rows stay.
+const PROSE_BASE := 28
+
+
+func apply_text_scale() -> void:
+	var theme := ThemeDB.get_project_theme()
+	if theme == null:
+		return
+	var size := roundi(PROSE_BASE * Settings.text_scale())
+	for variation in ["Prose", "ProseMuted"]:
+		theme.set_font_size("font_size", variation, size)
 
 
 func _refresh() -> void:

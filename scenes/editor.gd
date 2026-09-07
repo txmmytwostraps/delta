@@ -16,6 +16,9 @@ var visit: Dictionary = {}
 ## checks replace tests, and a pass marks the step done.
 var step_milestone := ""
 var step_index := -1
+## A drill: a variant of the problem with fresh numbers (see Variants). It
+## counts as practice; Next › rolls another.
+var variant: Dictionary = {}
 
 const StagePanel := preload("res://scenes/stage_panel.gd")
 var _stage: VBoxContainer
@@ -24,6 +27,8 @@ var _stage_timer: Timer
 
 ## The problem, or the milestone step, this editor is for.
 func _item() -> Dictionary:
+	if not variant.is_empty():
+		return variant
 	if step_milestone != "":
 		var data := Bank.milestone_data(step_milestone)
 		if step_index >= 0 and step_index < data.get("steps", []).size():
@@ -36,12 +41,12 @@ func _item() -> Dictionary:
 @onready var drawer: ScrollContainer = $Margin/Column/Drawer
 @onready var body: HBoxContainer = $Margin/Column/Body
 @onready var side_scroll: ScrollContainer = $Margin/Column/Body/Side
-@onready var back: Button = $Margin/Column/TopBar/Back
-@onready var title: Label = $Margin/Column/TopBar/Title
-@onready var saved: Label = $Margin/Column/TopBar/Saved
-@onready var reset_button: Button = $Margin/Column/TopBar/Reset
-@onready var run_button: Button = $Margin/Column/TopBar/Run
-@onready var next_button: Button = $Margin/Column/TopBar/Next
+@onready var back: Button = $Margin/Column/TopBand/TopBar/Back
+@onready var title: Label = $Margin/Column/TopBand/TopBar/Title
+@onready var saved: Label = $Margin/Column/TopBand/TopBar/Saved
+@onready var reset_button: Button = $Margin/Column/TopBand/TopBar/Reset
+@onready var run_button: Button = $Margin/Column/TopBand/TopBar/Run
+@onready var next_button: Button = $Margin/Column/TopBand/TopBar/Next
 @onready var code: CodeEdit = $Margin/Column/Body/Code
 @onready var side: VBoxContainer = $Margin/Column/Body/Side/SideColumn
 @onready var prompt: Label = $Margin/Column/Body/Side/SideColumn/Prompt
@@ -69,6 +74,8 @@ func _ready() -> void:
 	if step_milestone != "":
 		var meta := Bank.milestone(step_milestone)
 		title.text = "MILESTONE %02d · STEP %d OF %d · %s" % [int(meta.get("number", 0)), step_index + 1, Bank.milestone_data(step_milestone).get("steps", []).size(), str(p.get("title", "")).to_upper()]
+	elif not variant.is_empty():
+		title.text = "DRILL · %s · %s · FRESH NUMBERS" % [Bank.topic_title(str(p.get("concept", ""))).to_upper(), str(p.get("title", "")).to_upper()]
 	else:
 		title.text = "%s · %s%s" % [Bank.topic_title(str(p.get("concept", ""))).to_upper(), str(p.get("title", "")).to_upper(), " · REVIEW" if review else ""]
 	prompt.text = str(p.get("prompt", ""))
@@ -116,6 +123,9 @@ func _ready() -> void:
 			if not _loading:
 				_stage_timer.start())
 		_stage.reset()
+	elif not variant.is_empty():
+		solution_toggle.visible = false
+		solution.visible = false
 	else:
 		_render_solution_lock(p)
 
@@ -125,7 +135,7 @@ func _ready() -> void:
 	_save_timer.timeout.connect(_save_draft)
 	add_child(_save_timer)
 	code.text_changed.connect(func() -> void:
-		if _loading or review:
+		if _loading or review or not variant.is_empty():
 			return
 		saved.text = "…"
 		_save_timer.start())
@@ -204,13 +214,13 @@ func _setup_code() -> void:
 	var p := _item()
 	var highlighter := CodeHighlighter.new()
 	highlighter.number_color = Color("#a1ffe0")
-	highlighter.symbol_color = Color("#e8ecef")
-	highlighter.function_color = Color("#57b3ff")
-	highlighter.member_variable_color = Color("#e8ecef")
+	highlighter.symbol_color = Color("#eef1f4")
+	highlighter.function_color = Color("#6dbdff")
+	highlighter.member_variable_color = Color("#eef1f4")
 	for word in KEYWORDS:
 		highlighter.add_keyword_color(word, Color("#ff7085"))
 	for word in TYPES:
-		highlighter.add_keyword_color(word, Color("#57b3ff"))
+		highlighter.add_keyword_color(word, Color("#6dbdff"))
 	highlighter.add_color_region("\"", "\"", Color("#ffeda1"), false)
 	highlighter.add_color_region("'", "'", Color("#ffeda1"), false)
 	highlighter.add_color_region("#", "", Color("#8a8f9d"), true)
@@ -272,7 +282,7 @@ func _render_hints(p: Dictionary) -> void:
 		button.text = "[+] HINT %d OF %d" % [i + 1, list.size()] if open else "[#] HINT %d OF %d — %s" % [i + 1, list.size(), Scaffold.hint_lock_text(level).to_upper()]
 		button.disabled = not open
 		var text := Label.new()
-		text.theme_type_variation = &"Muted"
+		text.theme_type_variation = &"Prose"
 		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		text.text = str(list[i]).replace("`", "")
 		text.visible = false
@@ -342,6 +352,8 @@ func _on_run() -> void:
 	var outcome: Dictionary
 	if step_milestone != "":
 		outcome = MilestoneStep.record(Bank.milestone(step_milestone), Bank.milestone_data(step_milestone), step_index, reply)
+	elif not variant.is_empty():
+		outcome = Submission.record_drill(p, reply)
 	else:
 		outcome = Submission.record(p, reply, visit)
 	# Laid out now, shown once the verdict panel has gone.
@@ -349,9 +361,11 @@ func _on_run() -> void:
 	results.visible = false
 	run_button.disabled = false
 	code.release_focus()   # so the phone's keyboard goes and the panel is seen
+	var app := get_tree().get_first_node_in_group("app")
+	if app:
+		app.buzz(outcome.pass)
 	if outcome.pass:
-		var app := get_tree().get_first_node_in_group("app")
-		var label: String = "NEXT STEP ›" if step_milestone != "" else (app.next_label(problem_id, review) if app else "NEXT ›")
+		var label: String = "NEXT STEP ›" if step_milestone != "" else ("NEXT VARIANT ›" if not variant.is_empty() else (app.next_label(problem_id, review) if app else "NEXT ›"))
 		next_button.visible = true
 		next_button.text = label
 		run_button.theme_type_variation = &""
@@ -367,7 +381,7 @@ func _after_verdict() -> void:
 	var p := _item()
 	if step_milestone != "":
 		_stage.refresh()
-	else:
+	elif variant.is_empty():
 		_render_solution_lock(p)
 		_render_hints(p)
 
@@ -390,6 +404,10 @@ func _go_next() -> void:
 	if step_milestone != "":
 		var last: int = Bank.milestone_data(step_milestone).get("steps", []).size() - 1
 		app.open_milestone(step_milestone, mini(step_index + 1, last))
+	elif not variant.is_empty():
+		app.open_drill(str(variant.get("concept", "")))
+	elif app.run_active and app.run_has(problem_id):
+		app.run_next(problem_id)
 	else:
 		app.open_next(problem_id, review)
 
@@ -414,5 +432,5 @@ func close() -> void:
 	queue_free()
 	if app and step_milestone != "":
 		app.open_milestone(step_milestone, step_index)
-	elif app:
+	elif app and variant.is_empty():
 		app.open_problem(problem_id, review)

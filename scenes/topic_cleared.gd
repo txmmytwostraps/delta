@@ -6,8 +6,8 @@ extends PanelContainer
 
 var concept := ""
 
-@onready var back: Button = $Column/TopMargin/TopBar/Back
-@onready var meta: Label = $Column/TopMargin/TopBar/Meta
+@onready var back: Button = $Column/TopBand/TopMargin/TopBar/Back
+@onready var meta: Label = $Column/TopBand/TopMargin/TopBar/Meta
 @onready var eyebrow: Label = $Column/Scroll/Margin/Body/Eyebrow
 @onready var title: Label = $Column/Scroll/Margin/Body/Title
 @onready var tick: Label = $Column/Scroll/Margin/Body/Tick
@@ -49,7 +49,6 @@ func render() -> void:
 		return
 	var cleared: bool = t.total > 0 and t.done == t.total
 	var lesson := "L%02d" % int(t.lesson)
-	meta.text = "TOPIC CLEARED" if cleared else "NOT CLEARED YET"
 	eyebrow.text = ("// TOPIC CLEARED · %s" if cleared else "// %s · NOT CLEARED YET") % lesson
 	title.text = str(t.title).to_upper()
 	tick.text = "%s%d/%d" % ["✓ " if cleared else "", t.done, t.total]

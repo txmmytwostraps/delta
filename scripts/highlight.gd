@@ -5,8 +5,8 @@ class_name Highlight
 const KEYWORDS := ["func", "return", "var", "const", "if", "elif", "else", "while", "for", "in", "not", "and", "or", "pass", "break", "continue", "true", "false", "null", "extends", "class_name", "match", "is", "self"]
 const TYPES := ["int", "float", "String", "bool", "Array", "Dictionary", "Variant", "Vector2", "Vector2i", "Rect2", "Rect2i", "void"]
 const KEYWORD_COLOR := "#ff7085"
-const TYPE_COLOR := "#57b3ff"
-const FUNCTION_COLOR := "#57b3ff"
+const TYPE_COLOR := "#6dbdff"
+const FUNCTION_COLOR := "#6dbdff"
 const STRING_COLOR := "#ffeda1"
 const NUMBER_COLOR := "#a1ffe0"
 const COMMENT_COLOR := "#8a8f9d"

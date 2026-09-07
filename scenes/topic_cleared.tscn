@@ -10,27 +10,31 @@ script = ExtResource("1")
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="TopMargin" type="MarginContainer" parent="Column"]
+[node name="TopBand" type="PanelContainer" parent="Column"]
+layout_mode = 2
+theme_type_variation = &"TopBar"
+
+[node name="TopMargin" type="MarginContainer" parent="Column/TopBand"]
 layout_mode = 2
 theme_override_constants/margin_left = 32
 theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 32
 theme_override_constants/margin_bottom = 8
 
-[node name="TopBar" type="HBoxContainer" parent="Column/TopMargin"]
+[node name="TopBar" type="HBoxContainer" parent="Column/TopBand/TopMargin"]
 layout_mode = 2
 
-[node name="Back" type="Button" parent="Column/TopMargin/TopBar"]
+[node name="Back" type="Button" parent="Column/TopBand/TopMargin/TopBar"]
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
 theme_type_variation = &"Link"
 text = "‹ ROUTE"
 
-[node name="Meta" type="Label" parent="Column/TopMargin/TopBar"]
+[node name="Meta" type="Label" parent="Column/TopBand/TopMargin/TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"Small"
-text = "TOPIC CLEARED"
+text = ""
 horizontal_alignment = 2
 vertical_alignment = 1
 clip_text = true
@@ -76,7 +80,7 @@ theme_override_constants/separation = 20
 
 [node name="Reviews" type="Label" parent="Column/Scroll/Margin/Body"]
 layout_mode = 2
-theme_type_variation = &"Muted"
+theme_type_variation = &"ProseMuted"
 text = "Reviews start tomorrow: 2 a day for a week. They come back on the days the schedule picks until each one is solved cleanly twice."
 autowrap_mode = 3
 

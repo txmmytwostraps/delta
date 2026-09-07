@@ -11,14 +11,16 @@ const GROUND := 128.0
 const KINDS := {"move": ["x", "speed"], "health": ["health", "max_health"]}
 
 const BG := Color("#0b0d10")
-const LINE := Color("#1c2229")
-const LINE_STRONG := Color("#2a323b")
-const DIM := Color("#4e5a66")
-const TEXT := Color("#e8ecef")
+const LINE := Color("#232b34")
+const LINE_STRONG := Color("#344050")
+const DIM := Color("#6b7885")
+const TEXT := Color("#eef1f4")
 const ACCENT := Color("#7ef0c2")
 const ERROR := Color("#ff7085")
 
 var kind := "move"
+## A portrait: only the robot, drawn large to fit the height (Profile).
+var portrait := false
 var state: Dictionary = {}
 ## Text under the stage, e.g. "x = 40 · speed = 120".
 var readout := ""
@@ -31,7 +33,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# The strip keeps its 600 by 160 shape at whatever width it is given.
 	resized.connect(func() -> void:
-		custom_minimum_size.y = size.x * STAGE_HEIGHT / STAGE_WIDTH
+		if not portrait:
+			custom_minimum_size.y = size.x * STAGE_HEIGHT / STAGE_WIDTH
 		queue_redraw())
 	state = {"health": 100, "max_health": 100, "out": []} if kind == "health" else {"x": 0, "speed": 0}
 	set_process(false)
@@ -69,10 +72,27 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
+	if portrait:
+		# The robot alone, 56 units tall on its grid, scaled to the height.
+		var s := size.y / 64.0
+		draw_set_transform(Vector2(size.x / 2.0, size.y - (4.0 + GROUND) * s), 0.0, Vector2(s, s))
+		var hp: Variant = state.get("health", null)
+		_robot(0.0, DIM if (hp is float or hp is int) and float(hp) <= 0.0 else ACCENT)
+		return
 	var scale := size.x / STAGE_WIDTH
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(scale, scale))
 	draw_rect(Rect2(0, 0, STAGE_WIDTH, STAGE_HEIGHT), BG)
-	draw_rect(Rect2(0, 0, STAGE_WIDTH, STAGE_HEIGHT), LINE, false, 1.0)
+	# The stage's own grid: 32 points, full strength.
+	var g := 64.0
+	var gx := 0.0
+	while gx <= STAGE_WIDTH:
+		draw_line(Vector2(gx, 0), Vector2(gx, STAGE_HEIGHT), LINE, 1.0)
+		gx += g
+	var gy := 0.0
+	while gy <= STAGE_HEIGHT:
+		draw_line(Vector2(0, gy), Vector2(STAGE_WIDTH, gy), LINE, 1.0)
+		gy += g
+	draw_rect(Rect2(0, 0, STAGE_WIDTH, STAGE_HEIGHT), LINE_STRONG, false, 1.0)
 	draw_line(Vector2(0, GROUND + 0.5), Vector2(STAGE_WIDTH, GROUND + 0.5), LINE_STRONG, 1.0)
 	if kind == "health":
 		_draw_health()

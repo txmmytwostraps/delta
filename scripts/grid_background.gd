@@ -12,7 +12,7 @@ func _ready() -> void:
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), BACKGROUND)
-	var line := Color("#7ef0c2", 0.045)
+	var line := Color("#7ef0c2", 0.025)
 	var x := 0.0
 	while x <= size.x:
 		draw_line(Vector2(x, 0), Vector2(x, size.y), line, 2.0)

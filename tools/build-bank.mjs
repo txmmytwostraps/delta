@@ -18,6 +18,15 @@ writeFileSync(join(out, "route.json"), JSON.stringify({
   topics: route.TOPICS,
   milestones: route.MILESTONES,
   lessons: route.LESSONS.map(([number, title]) => ({ number, title })),
+  // The lessons grouped into stages for the Route (route-data.js STAGES);
+  // the same five until the site's copy lands in a pinned commit.
+  stages: route.STAGES || [
+    { title: "First steps", from: 1, to: 7 },
+    { title: "Variables and numbers", from: 8, to: 12 },
+    { title: "Decisions", from: 13, to: 15 },
+    { title: "Loops and lists", from: 16, to: 20 },
+    { title: "Real functions", from: 21, to: 27 },
+  ],
   default_course_lock: route.DEFAULT_COURSE_LOCK,
   new_per_day: route.NEW_PER_DAY,
 }, null, 2) + "\n");

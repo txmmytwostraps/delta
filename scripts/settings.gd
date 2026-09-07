@@ -26,8 +26,34 @@ func new_per_day() -> int:
 	return Bank.new_per_day if v == null else int(v)
 
 
+## The per-topic overrides only: the text size rides in the same JSON
+## under "_text_size", like the site, so the table needs no new column.
 func hint_overrides() -> Dictionary:
-	return _data().get("hint_overrides", {})
+	var o: Dictionary = _data().get("hint_overrides", {}).duplicate()
+	o.erase("_text_size")
+	return o
+
+
+## Text size S / M / L: 0.9, 1, 1.15. Prose only.
+const TEXT_SIZES := {"S": 0.9, "M": 1.0, "L": 1.15}
+
+
+func text_scale() -> float:
+	var v: Variant = _data().get("hint_overrides", {}).get("_text_size", null)
+	if v is float or v is int:
+		for k in TEXT_SIZES:
+			if is_equal_approx(float(v), TEXT_SIZES[k]):
+				return TEXT_SIZES[k]
+	return 1.0
+
+
+func set_text_scale(v: float) -> void:
+	var o: Dictionary = _data().get("hint_overrides", {}).duplicate()
+	if is_equal_approx(v, 1.0):
+		o.erase("_text_size")
+	else:
+		o["_text_size"] = v
+	_save({"hint_overrides": o})
 
 
 func set_course_lock(n: int) -> void:
@@ -40,7 +66,7 @@ func set_new_per_day(n: int) -> void:
 
 ## level: "full" | "reduced" | "minimal", or "" to clear the override.
 func set_hint_override(concept: String, level: String) -> void:
-	var o: Dictionary = hint_overrides().duplicate()
+	var o: Dictionary = _data().get("hint_overrides", {}).duplicate()
 	if LEVELS.has(level):
 		o[concept] = level
 	else:

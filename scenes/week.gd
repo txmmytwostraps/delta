@@ -2,7 +2,7 @@ extends PanelContainer
 ## This week: the summary text, and a button that copies it for the weekly
 ## review. Same text as the site's This week page.
 
-@onready var back: Button = $Column/TopMargin/TopBar/Back
+@onready var back: Button = $Column/TopBand/TopMargin/TopBar/Back
 @onready var summary: Label = $Column/Scroll/Margin/Body/SummaryPanel/Summary
 @onready var copy_button: Button = $Column/Bar/BarMargin/Actions/Copy
 @onready var copied: Label = $Column/Bar/BarMargin/Actions/Copied

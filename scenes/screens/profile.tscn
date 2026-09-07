@@ -3,246 +3,34 @@
 [ext_resource type="PackedScene" path="res://scenes/screens/screen_header.tscn" id="1"]
 [ext_resource type="Script" path="res://scenes/screens/profile.gd" id="2"]
 
-[node name="Profile" type="MarginContainer"]
-theme_override_constants/margin_left = 32
-theme_override_constants/margin_top = 48
-theme_override_constants/margin_right = 32
-theme_override_constants/margin_bottom = 0
+[node name="Profile" type="VBoxContainer"]
+theme_override_constants/separation = 0
 script = ExtResource("2")
 
-[node name="Scroll" type="ScrollContainer" parent="."]
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 0
+
+[node name="Scroll" type="ScrollContainer" parent="Margin"]
 layout_mode = 2
 scroll_deadzone = 24
 horizontal_scroll_mode = 0
 
-[node name="Body" type="VBoxContainer" parent="Scroll"]
+[node name="Body" type="VBoxContainer" parent="Margin/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 28
+theme_override_constants/separation = 24
 
-[node name="Header" parent="Scroll/Body" instance=ExtResource("1")]
+[node name="Header" parent="Margin/Scroll/Body" instance=ExtResource("1")]
 layout_mode = 2
-eyebrow = "Account"
 title = "Profile"
+icon = "profile"
 
-[node name="Account" type="PanelContainer" parent="Scroll/Body"]
-layout_mode = 2
-
-[node name="Column" type="VBoxContainer" parent="Scroll/Body/Account"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Label" type="Label" parent="Scroll/Body/Account/Column"]
-layout_mode = 2
-theme_type_variation = &"Small"
-text = "SIGNED IN AS"
-
-[node name="Name" type="Label" parent="Scroll/Body/Account/Column"]
-layout_mode = 2
-theme_type_variation = &"Heading2"
-text = "—"
-autowrap_mode = 3
-
-[node name="Email" type="Label" parent="Scroll/Body/Account/Column"]
-layout_mode = 2
-theme_type_variation = &"Muted"
-autowrap_mode = 3
-
-[node name="Streak" type="PanelContainer" parent="Scroll/Body"]
-layout_mode = 2
-theme_type_variation = &"PanelActive"
-
-[node name="Column" type="VBoxContainer" parent="Scroll/Body/Streak"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Label" type="Label" parent="Scroll/Body/Streak/Column"]
-layout_mode = 2
-theme_type_variation = &"Small"
-text = "DAY STREAK"
-
-[node name="Numbers" type="HBoxContainer" parent="Scroll/Body/Streak/Column"]
-layout_mode = 2
-theme_override_constants/separation = 24
-
-[node name="Value" type="Label" parent="Scroll/Body/Streak/Column/Numbers"]
-layout_mode = 2
-theme_type_variation = &"Big"
-text = "…"
-
-[node name="Longest" type="Label" parent="Scroll/Body/Streak/Column/Numbers"]
-layout_mode = 2
-size_flags_vertical = 8
-theme_type_variation = &"Detail"
-text = "longest 0"
-
-[node name="WeekHost" type="VBoxContainer" parent="Scroll/Body/Streak/Column"]
-layout_mode = 2
-
-[node name="Note" type="Label" parent="Scroll/Body/Streak/Column"]
-layout_mode = 2
-theme_type_variation = &"Muted"
-autowrap_mode = 3
-
-[node name="Xp" type="PanelContainer" parent="Scroll/Body"]
-layout_mode = 2
-
-[node name="Column" type="VBoxContainer" parent="Scroll/Body/Xp"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Label" type="Label" parent="Scroll/Body/Xp/Column"]
-layout_mode = 2
-theme_type_variation = &"Small"
-text = "LEVEL"
-
-[node name="Value" type="Label" parent="Scroll/Body/Xp/Column"]
-layout_mode = 2
-theme_type_variation = &"Heading2"
-text = "1"
-
-[node name="XpHost" type="VBoxContainer" parent="Scroll/Body/Xp/Column"]
-layout_mode = 2
-
-[node name="Settings" type="PanelContainer" parent="Scroll/Body"]
-layout_mode = 2
-
-[node name="Column" type="VBoxContainer" parent="Scroll/Body/Settings"]
-layout_mode = 2
-theme_override_constants/separation = 24
-
-[node name="Label" type="Label" parent="Scroll/Body/Settings/Column"]
-layout_mode = 2
-theme_type_variation = &"Small"
-text = "SETTINGS"
-
-[node name="SetSize" type="HBoxContainer" parent="Scroll/Body/Settings/Column"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="SetSizeColumn" type="VBoxContainer" parent="Scroll/Body/Settings/Column/SetSize"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 6
-
-[node name="SetSizeLabel" type="Label" parent="Scroll/Body/Settings/Column/SetSize/SetSizeColumn"]
-layout_mode = 2
-text = "New problems a day"
-
-[node name="SetSizeValue" type="Label" parent="Scroll/Body/Settings/Column/SetSize/SetSizeColumn"]
-layout_mode = 2
-theme_type_variation = &"Heading3"
-text = "5"
-
-[node name="SetSizeNote" type="Label" parent="Scroll/Body/Settings/Column/SetSize/SetSizeColumn"]
-layout_mode = 2
-theme_type_variation = &"Detail"
-text = "The site uses 5. Another number here changes the phone's set."
-autowrap_mode = 3
-
-[node name="SizeLess" type="Button" parent="Scroll/Body/Settings/Column/SetSize"]
-custom_minimum_size = Vector2(88, 88)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 1
-text = "−"
-
-[node name="SizeMore" type="Button" parent="Scroll/Body/Settings/Column/SetSize"]
-custom_minimum_size = Vector2(88, 88)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 1
-text = "+"
-
-[node name="Reminder" type="HBoxContainer" parent="Scroll/Body/Settings/Column"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="ReminderColumn" type="VBoxContainer" parent="Scroll/Body/Settings/Column/Reminder"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 6
-
-[node name="ReminderLabel" type="Label" parent="Scroll/Body/Settings/Column/Reminder/ReminderColumn"]
-layout_mode = 2
-text = "Review reminder"
-
-[node name="ReminderValue" type="Label" parent="Scroll/Body/Settings/Column/Reminder/ReminderColumn"]
-layout_mode = 2
-theme_type_variation = &"Heading3"
-text = "19:00"
-
-[node name="ReminderNote" type="Label" parent="Scroll/Body/Settings/Column/Reminder/ReminderColumn"]
-layout_mode = 2
-theme_type_variation = &"Detail"
-text = "One notification a day at most, when reviews are due or the run is not done."
-autowrap_mode = 3
-
-[node name="ReminderToggle" type="Button" parent="Scroll/Body/Settings/Column/Reminder/ReminderColumn"]
-custom_minimum_size = Vector2(0, 88)
-layout_mode = 2
-size_flags_horizontal = 0
-mouse_filter = 1
-theme_type_variation = &"Link"
-text = "TURN ON"
-
-[node name="TimeLess" type="Button" parent="Scroll/Body/Settings/Column/Reminder"]
-custom_minimum_size = Vector2(88, 88)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 1
-text = "−"
-
-[node name="TimeMore" type="Button" parent="Scroll/Body/Settings/Column/Reminder"]
-custom_minimum_size = Vector2(88, 88)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 1
-text = "+"
-
-[node name="Sync" type="PanelContainer" parent="Scroll/Body"]
-layout_mode = 2
-
-[node name="Column" type="VBoxContainer" parent="Scroll/Body/Sync"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="Label" type="Label" parent="Scroll/Body/Sync/Column"]
-layout_mode = 2
-theme_type_variation = &"Small"
-text = "ACCOUNT SYNC"
-
-[node name="Status" type="Label" parent="Scroll/Body/Sync/Column"]
-layout_mode = 2
-theme_type_variation = &"Muted"
-text = "…"
-autowrap_mode = 3
-
-[node name="SyncNow" type="Button" parent="Scroll/Body/Sync/Column"]
-custom_minimum_size = Vector2(0, 88)
-layout_mode = 2
-mouse_filter = 1
-text = "SYNC NOW"
-
-[node name="Week" type="Button" parent="Scroll/Body"]
-custom_minimum_size = Vector2(0, 88)
-layout_mode = 2
-mouse_filter = 1
-text = "THIS WEEK'S SUMMARY"
-
-[node name="JudgeCheck" type="Button" parent="Scroll/Body"]
-custom_minimum_size = Vector2(0, 88)
-layout_mode = 2
-mouse_filter = 1
-text = "CHECK THE JUDGE"
-
-[node name="SignOut" type="Button" parent="Scroll/Body"]
-custom_minimum_size = Vector2(0, 88)
-layout_mode = 2
-mouse_filter = 1
-text = "SIGN OUT"
-
-[node name="Update" type="Button" parent="Scroll/Body"]
+[node name="Update" type="Button" parent="Margin/Scroll/Body"]
 visible = false
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
@@ -250,8 +38,107 @@ mouse_filter = 1
 theme_type_variation = &"Primary"
 text = "UPDATE AVAILABLE"
 
-[node name="Version" type="Label" parent="Scroll/Body"]
+[node name="Top" type="HBoxContainer" parent="Margin/Scroll/Body"]
 layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Character" type="PanelContainer" parent="Margin/Scroll/Body/Top"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+
+[node name="CharacterColumn" type="VBoxContainer" parent="Margin/Scroll/Body/Top/Character"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StageHost" type="VBoxContainer" parent="Margin/Scroll/Body/Top/Character/CharacterColumn"]
+custom_minimum_size = Vector2(0, 160)
+layout_mode = 2
+
+[node name="HpHost" type="VBoxContainer" parent="Margin/Scroll/Body/Top/Character/CharacterColumn"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Gallery" type="Button" parent="Margin/Scroll/Body/Top/Character/CharacterColumn"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+mouse_filter = 1
+theme_type_variation = &"Link"
+text = "OPEN GALLERY ›"
+alignment = 0
+
+[node name="Who" type="VBoxContainer" parent="Margin/Scroll/Body/Top"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_constants/separation = 6
+
+[node name="Name" type="Label" parent="Margin/Scroll/Body/Top/Who"]
+layout_mode = 2
+theme_type_variation = &"Name"
+text = "—"
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="Email" type="Label" parent="Margin/Scroll/Body/Top/Who"]
+layout_mode = 2
+theme_type_variation = &"Muted"
+autowrap_mode = 3
+
+[node name="Tiles" type="GridContainer" parent="Margin/Scroll/Body"]
+layout_mode = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 2
+
+[node name="WeekHost" type="VBoxContainer" parent="Margin/Scroll/Body"]
+layout_mode = 2
+
+[node name="SettingsLabel" type="Label" parent="Margin/Scroll/Body"]
+layout_mode = 2
+theme_type_variation = &"Small"
+text = "SETTINGS"
+
+[node name="Settings" type="VBoxContainer" parent="Margin/Scroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="MoreLabel" type="Label" parent="Margin/Scroll/Body"]
+layout_mode = 2
+theme_type_variation = &"Small"
+text = "MORE"
+
+[node name="More" type="VBoxContainer" parent="Margin/Scroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Footer" type="HBoxContainer" parent="Margin/Scroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Version" type="Label" parent="Margin/Scroll/Body/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_type_variation = &"Dim"
 text = "Delta"
-autowrap_mode = 3
+vertical_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="About" type="Button" parent="Margin/Scroll/Body/Footer"]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+mouse_filter = 1
+theme_type_variation = &"Link"
+disabled = true
+text = "ABOUT"
+
+[node name="SignOut" type="Button" parent="Margin/Scroll/Body/Footer"]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+mouse_filter = 1
+theme_type_variation = &"Link"
+text = "SIGN OUT"
+
+[node name="Bottom" type="Control" parent="Margin/Scroll/Body"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2

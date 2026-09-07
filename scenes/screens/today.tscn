@@ -3,82 +3,99 @@
 [ext_resource type="PackedScene" path="res://scenes/screens/screen_header.tscn" id="1"]
 [ext_resource type="Script" path="res://scenes/screens/today.gd" id="2"]
 
-[node name="Today" type="MarginContainer"]
-theme_override_constants/margin_left = 32
-theme_override_constants/margin_top = 48
-theme_override_constants/margin_right = 32
-theme_override_constants/margin_bottom = 0
+[node name="Today" type="VBoxContainer"]
+theme_override_constants/separation = 0
 script = ExtResource("2")
 
-[node name="Scroll" type="ScrollContainer" parent="."]
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 0
+
+[node name="Scroll" type="ScrollContainer" parent="Margin"]
 layout_mode = 2
 scroll_deadzone = 24
 horizontal_scroll_mode = 0
 
-[node name="Body" type="VBoxContainer" parent="Scroll"]
+[node name="Body" type="VBoxContainer" parent="Margin/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 24
 
-[node name="Header" parent="Scroll/Body" instance=ExtResource("1")]
+[node name="Header" parent="Margin/Scroll/Body" instance=ExtResource("1")]
 layout_mode = 2
-eyebrow = "Daily run"
 title = "Today"
+icon = "today"
 
-[node name="Dateline" type="Label" parent="Scroll/Body"]
-layout_mode = 2
-theme_type_variation = &"Small"
-text = "// SATURDAY 09.06"
-
-[node name="XpHost" type="VBoxContainer" parent="Scroll/Body"]
-layout_mode = 2
-
-[node name="Count" type="Label" parent="Scroll/Body"]
+[node name="Dateline" type="Label" parent="Margin/Scroll/Body"]
 layout_mode = 2
 theme_type_variation = &"Muted"
-text = "0 / 3"
+text = "Monday 7 September"
 
-[node name="StreakRow" type="HBoxContainer" parent="Scroll/Body"]
+[node name="StreakRow" type="HBoxContainer" parent="Margin/Scroll/Body"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="StreakLabel" type="Label" parent="Scroll/Body/StreakRow"]
+[node name="StreakValue" type="Label" parent="Margin/Scroll/Body/StreakRow"]
+layout_mode = 2
+theme_type_variation = &"Number"
+text = "0"
+
+[node name="StreakColumn" type="VBoxContainer" parent="Margin/Scroll/Body/StreakRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_constants/separation = 6
+
+[node name="StreakLabel" type="Label" parent="Margin/Scroll/Body/StreakRow/StreakColumn"]
 layout_mode = 2
 theme_type_variation = &"Small"
-text = "STREAK 0"
-vertical_alignment = 1
+text = "DAY STREAK · BEST 0"
 
-[node name="WeekHost" type="VBoxContainer" parent="Scroll/Body/StreakRow"]
+[node name="WeekHost" type="VBoxContainer" parent="Margin/Scroll/Body/StreakRow/StreakColumn"]
 layout_mode = 2
 
-[node name="Slots" type="VBoxContainer" parent="Scroll/Body"]
+[node name="RunCard" type="PanelContainer" parent="Margin/Scroll/Body"]
 layout_mode = 2
-theme_override_constants/separation = 16
 
-[node name="DoneDay" type="Label" parent="Scroll/Body"]
+[node name="Slots" type="VBoxContainer" parent="Margin/Scroll/Body/RunCard"]
 layout_mode = 2
-theme_type_variation = &"Accent"
-text = "Day done. Anything more is extra."
-autowrap_mode = 3
+theme_override_constants/separation = 0
 
-[node name="NewLabel" type="Label" parent="Scroll/Body"]
+[node name="XpHost" type="VBoxContainer" parent="Margin/Scroll/Body"]
 layout_mode = 2
-theme_type_variation = &"Small"
-text = "TODAY'S NEW PROBLEMS"
 
-[node name="NewList" type="VBoxContainer" parent="Scroll/Body"]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="KeepLabel" type="Label" parent="Scroll/Body"]
+[node name="KeepLabel" type="Label" parent="Margin/Scroll/Body"]
 layout_mode = 2
 theme_type_variation = &"Small"
 text = "KEEP GOING"
 
-[node name="Keep" type="VBoxContainer" parent="Scroll/Body"]
+[node name="Keep" type="VBoxContainer" parent="Margin/Scroll/Body"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 0
 
-[node name="Bottom" type="Control" parent="Scroll/Body"]
+[node name="Bottom" type="Control" parent="Margin/Scroll/Body"]
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
+
+[node name="Bar" type="PanelContainer" parent="."]
+layout_mode = 2
+theme_type_variation = &"BottomBar"
+
+[node name="BarMargin" type="MarginContainer" parent="Bar"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 16
+
+[node name="Go" type="Button" parent="Bar/BarMargin"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+theme_type_variation = &"Primary"
+text = "START RUN"
+clip_text = true
+text_overrun_behavior = 3

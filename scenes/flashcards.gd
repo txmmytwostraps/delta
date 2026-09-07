@@ -7,8 +7,8 @@ extends PanelContainer
 var review := false
 var lesson := -1
 
-@onready var back_button: Button = $Column/TopMargin/TopBar/Back
-@onready var meta: Label = $Column/TopMargin/TopBar/Meta
+@onready var back_button: Button = $Column/TopBand/TopMargin/TopBar/Back
+@onready var meta: Label = $Column/TopBand/TopMargin/TopBar/Meta
 @onready var scroll: ScrollContainer = $Column/Scroll
 @onready var progress_label: Label = $Column/Scroll/Margin/Body/Progress
 @onready var front: Label = $Column/Scroll/Margin/Body/Front
@@ -41,9 +41,16 @@ func _ready() -> void:
 	next_button.pressed.connect(func() -> void: answer(true))
 	done_button.pressed.connect(func() -> void:
 		var app := get_tree().get_first_node_in_group("app")
+		if app and review and app.run_active and app.run_has("cards"):
+			app.run_next("cards")
+			return
 		queue_free()
 		if app:
 			app.show_tab("today"))
+	back_button.pressed.connect(func() -> void:
+		var app := get_tree().get_first_node_in_group("app")
+		if app and app.run_active:
+			app.leave_run())
 	if review:
 		for r in Reviews.cards_due_today(Progress.today_key()).pending:
 			var c := Bank.card(str(r.problem_id))

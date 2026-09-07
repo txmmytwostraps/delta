@@ -13,7 +13,7 @@ signal hint_pressed
 
 const ACCENT := Color("#7ef0c2")
 const ERROR := Color("#ff7085")
-const PANEL := Color("#10141a")
+const PANEL := Color("#12181f")
 const SLIDE := 0.22
 
 var heading := Label.new()

@@ -33,6 +33,23 @@ static func record(problem: Dictionary, reply: Dictionary, page: Dictionary) -> 
 	return out
 
 
+## A drill (a variant with fresh numbers) counts as practice: no solve, no
+## miss, just an attempt of kind "drill", like the site.
+static func record_drill(problem: Dictionary, reply: Dictionary) -> Dictionary:
+	var id: String = problem.id
+	var result: Dictionary = reply.result
+	if reply.timed_out or not result.status in ["ok", "compile_error", "error"]:
+		return {"pass": false, "verdict": "Could not run", "note": str(result.get("error", ""))}
+	var passed: bool = result.status == "ok" and int(result.passed) >= int(result.total)
+	Sync.insert_attempt(id, "drill", "pass" if passed else "miss")
+	Scaffold.note_attempt(id, "drill", passed)
+	if result.status == "compile_error":
+		return {"pass": false, "verdict": "Did not compile", "note": ""}
+	if not passed:
+		return {"pass": false, "verdict": "Not yet", "note": str(result.get("error", ""))}
+	return {"pass": true, "verdict": "All tests pass", "note": "", "xp": "+0 XP · drill"}
+
+
 ## "+10 XP · first solve": what a pass earns, in the site's words. See the
 ## XP rule in progress.gd.
 static func xp_line(id: String, page: Dictionary) -> String:

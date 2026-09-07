@@ -1,9 +1,8 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scenes/app.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/screens/today.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/screens/route.tscn" id="3"]
-[ext_resource type="PackedScene" path="res://scenes/screens/practice.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://scenes/screens/concepts.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/screens/profile.tscn" id="6"]
 
@@ -23,14 +22,15 @@ layout_mode = 2
 [node name="Route" parent="Screens" instance=ExtResource("3")]
 layout_mode = 2
 
-[node name="Practice" parent="Screens" instance=ExtResource("4")]
-layout_mode = 2
-
 [node name="Concepts" parent="Screens" instance=ExtResource("5")]
 layout_mode = 2
 
 [node name="Profile" parent="Screens" instance=ExtResource("6")]
 layout_mode = 2
+
+[node name="Pages" type="Control" parent="Screens"]
+layout_mode = 2
+mouse_filter = 2
 
 [node name="TabBar" type="PanelContainer" parent="."]
 layout_mode = 2
@@ -58,15 +58,6 @@ theme_type_variation = &"Tab"
 toggle_mode = true
 button_group = SubResource("tabs")
 text = "ROUTE"
-
-[node name="Practice" type="Button" parent="TabBar/Tabs"]
-custom_minimum_size = Vector2(0, 112)
-layout_mode = 2
-size_flags_horizontal = 3
-theme_type_variation = &"Tab"
-toggle_mode = true
-button_group = SubResource("tabs")
-text = "PRACTICE"
 
 [node name="Concepts" type="Button" parent="TabBar/Tabs"]
 custom_minimum_size = Vector2(0, 112)
