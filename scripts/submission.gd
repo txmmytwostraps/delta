@@ -26,8 +26,32 @@ static func record(problem: Dictionary, reply: Dictionary, page: Dictionary) -> 
 	if int(result.passed) < int(result.total):
 		var v := _fail(id, page)
 		return v if not v.is_empty() else {"pass": false, "verdict": "Not yet · " + miss_text(problem), "note": ""}
+	var xp := xp_line(id, page)   # what this pass earns, decided before it is recorded
 	var v := _solve(id, problem, page)
-	return v if not v.is_empty() else {"pass": true, "verdict": "All tests pass · solved", "note": ""}
+	var out: Dictionary = v if not v.is_empty() else {"pass": true, "verdict": "All tests pass · solved", "note": ""}
+	out["xp"] = xp
+	return out
+
+
+## "+10 XP · first solve": what a pass earns, in the site's words. See the
+## XP rule in progress.gd.
+static func xp_line(id: String, page: Dictionary) -> String:
+	if bool(page.get("review", false)):
+		if bool(page.get("review_recorded", false)):
+			return "+0 XP · review already counted today"
+		return "+%d XP · review" % Progress.XP_REVIEW if review_on_time(id, page) else "+0 XP · late review"
+	if not Progress.is_solved(id):
+		return "+%d XP · first solve" % Progress.XP_PROBLEM
+	return "+0 XP · practice"
+
+
+## Whether the open review is being done on its due day: decided once per
+## visit, before the review moves its own due date (the site does the same).
+static func review_on_time(id: String, page: Dictionary) -> bool:
+	if not page.has("review_on_time"):
+		var row: Dictionary = Reviews.rows().get(id, {})
+		page["review_on_time"] = str(row.get("due_on", "")) == Progress.today_key()
+	return bool(page.review_on_time)
 
 
 ## Next › after a solve: in a review run, the next review still pending
@@ -82,9 +106,11 @@ static func _solve(id: String, problem: Dictionary, page: Dictionary) -> Diction
 
 static func _log(id: String, passed: bool, was_new: bool, page: Dictionary) -> Dictionary:
 	var in_review: bool = bool(page.get("review", false))
-	var kind := "review" if in_review else ("new" if was_new else "practice")
+	# Logged exactly as the site does: "review" on the due day, "review-late"
+	# otherwise, so both compute the same XP from the same rows.
+	var kind := ("review" if review_on_time(id, page) else "review-late") if in_review else ("new" if was_new else "practice")
 	Sync.insert_attempt(id, kind, "pass" if passed else "miss")
-	Scaffold.note_attempt(id, passed)
+	Scaffold.note_attempt(id, kind, passed)
 	if not in_review or bool(page.get("review_recorded", false)):
 		return {}
 	page["review_recorded"] = true

@@ -5,6 +5,7 @@ extends MarginContainer
 const DAYS := ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]
 
 @onready var dateline: Label = $Scroll/Body/Dateline
+@onready var xp_host: VBoxContainer = $Scroll/Body/XpHost
 @onready var count: Label = $Scroll/Body/Count
 @onready var streak_label: Label = $Scroll/Body/StreakRow/StreakLabel
 @onready var week_host: VBoxContainer = $Scroll/Body/StreakRow/WeekHost
@@ -18,6 +19,7 @@ const DAYS := ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY",
 func _ready() -> void:
 	Progress.changed.connect(render)
 	Reviews.changed.connect(render)
+	Scaffold.changed.connect(render)   # a review pass moves the XP at once
 	Sync.pulled.connect(render)
 	visibility_changed.connect(func() -> void:
 		if visible:
@@ -30,6 +32,8 @@ func render() -> void:
 		return
 	var now := Time.get_datetime_dict_from_system()
 	dateline.text = "// %s %02d.%02d — DAILY RUN" % [DAYS[now.weekday], now.month, now.day]
+	_clear(xp_host)
+	xp_host.add_child(UI.xp_block(Progress.xp_info()))
 
 	var status := Progress.run_status()
 	var run: Dictionary = status.run

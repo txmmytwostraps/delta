@@ -166,6 +166,19 @@ func _row(r: Dictionary, first: bool, last: bool) -> Control:
 			Scaffold.set_override(concept, cycle[(cycle.find(setting) + 1) % cycle.size()])
 			render())
 		column.add_child(hint_button)
+	if r.kind == "done" and r.has("concept"):
+		# The topic-cleared screen, again.
+		var cleared_button := Button.new()
+		cleared_button.theme_type_variation = &"Link"
+		cleared_button.custom_minimum_size.y = 72
+		cleared_button.mouse_filter = Control.MOUSE_FILTER_PASS
+		cleared_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		cleared_button.text = "TOPIC CLEARED ›"
+		cleared_button.pressed.connect(func() -> void:
+			var app := get_tree().get_first_node_in_group("app")
+			if app:
+				app.open_topic_cleared(r.concept))
+		column.add_child(cleared_button)
 	if r.get("current", false) and r.get("next", null) != null:
 		var go := Button.new()
 		go.theme_type_variation = &"Primary"

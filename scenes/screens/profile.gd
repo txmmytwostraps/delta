@@ -8,6 +8,8 @@ extends MarginContainer
 @onready var streak_longest: Label = $Scroll/Body/Streak/Column/Numbers/Longest
 @onready var week_host: VBoxContainer = $Scroll/Body/Streak/Column/WeekHost
 @onready var streak_note: Label = $Scroll/Body/Streak/Column/Note
+@onready var level_value: Label = $Scroll/Body/Xp/Column/Value
+@onready var xp_host: VBoxContainer = $Scroll/Body/Xp/Column/XpHost
 @onready var set_size_value: Label = $Scroll/Body/Settings/Column/SetSize/SetSizeColumn/SetSizeValue
 @onready var size_less: Button = $Scroll/Body/Settings/Column/SetSize/SizeLess
 @onready var size_more: Button = $Scroll/Body/Settings/Column/SetSize/SizeMore
@@ -47,6 +49,7 @@ func _ready() -> void:
 	Auth.changed.connect(_refresh)
 	Progress.changed.connect(_refresh)
 	Reviews.changed.connect(_refresh)
+	Scaffold.changed.connect(_refresh)
 	Sync.pulled.connect(_refresh)
 	Sync.state_changed.connect(_refresh_sync)
 	_refresh()
@@ -67,7 +70,13 @@ func _refresh() -> void:
 	week_host.add_child(UI.week_row(s.week, s.token))
 	var solved: int = Progress.solved().keys().filter(func(id: String) -> bool: return Bank.has_problem(id)).size()
 	var runs := Progress.runs_completed()
-	streak_note.text = "%d problem%s solved · level %d · %d full run%s" % [solved, "" if solved == 1 else "s", Progress.level(), runs, "" if runs == 1 else "s"]
+	streak_note.text = "%d problem%s solved · %d full run%s" % [solved, "" if solved == 1 else "s", runs, "" if runs == 1 else "s"]
+	var x := Progress.xp_info()
+	level_value.text = "%d" % int(x.level)
+	for child in xp_host.get_children():
+		xp_host.remove_child(child)
+		child.queue_free()
+	xp_host.add_child(UI.xp_block(x, true))
 	set_size_value.text = str(Progress.new_per_day())
 	var on := Reminders.enabled()
 	reminder_value.text = "%s · %s" % [Progress.reminder_time(), "on" if on else "off"]

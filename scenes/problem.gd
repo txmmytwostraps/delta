@@ -282,7 +282,7 @@ func _grade_pick() -> void:
 	var does := "prints" if _widget.print_only() else "returns"
 	var line: String
 	if graded.correct:
-		line = "Right · it %s %s%s" % [does, _widget.right_text(), extra]
+		line = str(outcome.get("xp", "Right · it %s %s" % [does, _widget.right_text()]))
 	else:
 		line = "It %s %s · you picked %s%s" % [does, _widget.right_text(), _widget.picked_text(), extra]
 	_show_verdict(p, graded.reply, outcome, false, line)
@@ -297,9 +297,12 @@ func _show_verdict(p: Dictionary, reply: Dictionary, outcome: Dictionary, with_r
 	instruction_text.visible = true
 	_render_status()
 	if outcome.pass:
+		var app := get_tree().get_first_node_in_group("app")
+		var label: String = app.next_label(problem_id, review) if app else "NEXT ›"
 		next_button.visible = true
+		next_button.text = label
 		run_button.theme_type_variation = &""
-		verdict.show_pass(line)
+		verdict.show_pass(line, label)
 	else:
 		verdict.show_fail(line)
 

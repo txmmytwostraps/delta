@@ -9,6 +9,7 @@ const JudgeCheckScene := preload("res://scenes/judge_check.tscn")
 const FlashcardsScene := preload("res://scenes/flashcards.tscn")
 const WeekScene := preload("res://scenes/week.tscn")
 const MilestoneScene := preload("res://scenes/milestone.tscn")
+const TopicClearedScene := preload("res://scenes/topic_cleared.tscn")
 
 @onready var screens: MarginContainer = $Screens
 @onready var tab_bar: PanelContainer = $TabBar
@@ -77,16 +78,49 @@ func open_editor(id: String, review: bool = false) -> void:
 
 
 ## Next › after a solve: the next review in a review run, else the next
-## unsolved problem in the topic. When there is none the page closes and
-## the tab underneath shows (the topic-cleared screen goes here once it
-## exists). Returns whether a problem was opened.
+## unsolved problem in the topic, or the topic-cleared screen on the last
+## one (shown once per topic). With nothing left the page closes: a review
+## run ends on Today. Returns whether something was opened.
 func open_next(id: String, review: bool) -> bool:
 	var next := Submission.next_problem(id, review)
-	if next == "":
-		close_pages()
+	if next != "":
+		open_problem(next, review)
+		return true
+	if not review and topic_cleared_pending(id):
+		open_topic_cleared(str(Bank.problem(id).get("concept", "")))
+		return true
+	close_pages()
+	if review:
+		show_tab("today")
+	return false
+
+
+## What the Next › button says, decided after the solve is recorded, like
+## the site's.
+func next_label(id: String, review: bool) -> String:
+	if review:
+		return "NEXT REVIEW ›" if Submission.next_problem(id, true) != "" else "BACK TO TODAY ›"
+	if Submission.next_problem(id, false) == "" and topic_cleared_pending(id):
+		return "TOPIC CLEARED ›"
+	return "NEXT ›"
+
+
+## The problem's topic is cleared and its screen has not been shown yet.
+func topic_cleared_pending(id: String) -> bool:
+	var p := Bank.problem(id)
+	if p.is_empty():
 		return false
-	open_problem(next, review)
-	return true
+	var t := Progress.topic_stats(Bank.topic(str(p.concept)))
+	return t.total > 0 and t.done == t.total and not bool(Store.get_value("cleared." + str(p.concept), false))
+
+
+## The topic-cleared screen: once when the last problem passes, and again
+## from the Route.
+func open_topic_cleared(concept: String) -> void:
+	close_pages()
+	var page := TopicClearedScene.instantiate()
+	page.concept = concept
+	screens.add_child(page)
 
 
 func visit_for(id: String, review: bool) -> Dictionary:

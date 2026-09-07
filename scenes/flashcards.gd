@@ -90,7 +90,14 @@ func answer(passed: bool) -> void:
 		return
 	if review:
 		results["pass" if passed else "miss"] += 1
-		Reviews.record_result(Bank.card_id(queue[at]), passed, passed)
+		var card_id := Bank.card_id(queue[at])
+		# Logged as an attempt like the site does: "review" on the due day,
+		# "review-late" otherwise; decided before the review moves its date.
+		var row: Dictionary = Reviews.rows().get(card_id, {})
+		var kind := "review" if str(row.get("due_on", "")) == Progress.today_key() else "review-late"
+		Sync.insert_attempt(card_id, kind, "pass" if passed else "miss")
+		Scaffold.note_attempt(card_id, kind, passed)
+		Reviews.record_result(card_id, passed, passed)
 	at += 1
 	revealed = false
 	render()

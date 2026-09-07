@@ -1,0 +1,100 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/topic_cleared.gd" id="1"]
+
+[node name="TopicClearedPage" type="PanelContainer" groups=["page"]]
+theme_type_variation = &"Backdrop"
+script = ExtResource("1")
+
+[node name="Column" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="TopMargin" type="MarginContainer" parent="Column"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 8
+
+[node name="TopBar" type="HBoxContainer" parent="Column/TopMargin"]
+layout_mode = 2
+
+[node name="Back" type="Button" parent="Column/TopMargin/TopBar"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+theme_type_variation = &"Link"
+text = "‹ ROUTE"
+
+[node name="Meta" type="Label" parent="Column/TopMargin/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"Small"
+text = "TOPIC CLEARED"
+horizontal_alignment = 2
+vertical_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="Scroll" type="ScrollContainer" parent="Column"]
+layout_mode = 2
+size_flags_vertical = 3
+scroll_deadzone = 24
+horizontal_scroll_mode = 0
+
+[node name="Margin" type="MarginContainer" parent="Column/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 48
+
+[node name="Body" type="VBoxContainer" parent="Column/Scroll/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="Eyebrow" type="Label" parent="Column/Scroll/Margin/Body"]
+layout_mode = 2
+theme_type_variation = &"Eyebrow"
+text = "// TOPIC CLEARED"
+
+[node name="Title" type="Label" parent="Column/Scroll/Margin/Body"]
+layout_mode = 2
+theme_type_variation = &"Heading"
+text = "TOPIC"
+autowrap_mode = 3
+
+[node name="Tick" type="Label" parent="Column/Scroll/Margin/Body"]
+layout_mode = 2
+theme_type_variation = &"Big"
+text = "✓ 0/0"
+
+[node name="Facts" type="VBoxContainer" parent="Column/Scroll/Margin/Body"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Reviews" type="Label" parent="Column/Scroll/Margin/Body"]
+layout_mode = 2
+theme_type_variation = &"Muted"
+text = "Reviews start tomorrow: 2 a day for a week. They come back on the days the schedule picks until each one is solved cleanly twice."
+autowrap_mode = 3
+
+[node name="Bar" type="PanelContainer" parent="Column"]
+layout_mode = 2
+theme_type_variation = &"BottomBar"
+
+[node name="BarMargin" type="MarginContainer" parent="Column/Bar"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 16
+
+[node name="Go" type="Button" parent="Column/Bar/BarMargin"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+theme_type_variation = &"Primary"
+text = "NEXT"
+clip_text = true
+text_overrun_behavior = 3

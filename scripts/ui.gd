@@ -164,6 +164,37 @@ static func week_row(week: Array, token: bool) -> HBoxContainer:
 	return row
 
 
+## "LEVEL 3 · 1240 XP" with a thin bar to the next level. x from
+## Progress.xp_info(). detail: a second line with the XP to the next level.
+static func xp_block(x: Dictionary, detail: bool = false) -> VBoxContainer:
+	var block := VBoxContainer.new()
+	block.add_theme_constant_override("separation", 8)
+	var label := Label.new()
+	label.theme_type_variation = &"Small"
+	label.text = "LEVEL %d · %d XP" % [int(x.level), int(x.xp)]
+	block.add_child(label)
+	var bar := HBoxContainer.new()
+	bar.add_theme_constant_override("separation", 0)
+	bar.custom_minimum_size.y = 6
+	var done := ColorRect.new()
+	done.color = Color("#7ef0c2")
+	done.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	done.size_flags_stretch_ratio = maxf(0.001, float(x.into))
+	bar.add_child(done)
+	var left := ColorRect.new()
+	left.color = Color("#2a323b")
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left.size_flags_stretch_ratio = maxf(0.001, float(x.to_next))
+	bar.add_child(left)
+	block.add_child(bar)
+	if detail:
+		var line := Label.new()
+		line.theme_type_variation = &"Detail"
+		line.text = "%d XP to level %d" % [int(x.to_next), int(x.level) + 1]
+		block.add_child(line)
+	return block
+
+
 ## An invisible full-size button over a card, so a tap anywhere on it acts.
 ## right_margin keeps the controls column to itself.
 static func tap_area(on_press: Callable, right_margin: int = 0) -> Button:

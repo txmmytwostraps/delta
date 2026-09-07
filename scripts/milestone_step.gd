@@ -40,11 +40,14 @@ static func record(meta: Dictionary, data: Dictionary, step_index: int, reply: D
 	if first:
 		Progress.mark_solved(step.id)
 		Sync.insert_attempt(step.id, "milestone", "pass")
+		Scaffold.note_attempt(step.id, "milestone", true)
 	var st := Progress.milestone_status(meta)
 	var last: bool = step_index >= data.steps.size() - 1
 	var verdict := "Step %d done · milestone complete" % (step_index + 1) if st.done else "Step %d done" % (step_index + 1)
 	var note := "The next step starts from this script." if not last else ("" if st.godot_done else "Now build the same robot in Godot: the last tab above.")
-	return {"pass": true, "verdict": verdict, "note": note}
+	# What the pass earns, in the site's words; a step counts once.
+	var xp := "+%d XP · step %d done" % [Progress.XP_STEP, step_index + 1] if first else "+0 XP · again · step %d done" % (step_index + 1)
+	return {"pass": true, "verdict": verdict, "note": note, "xp": xp}
 
 
 ## The "In Godot" checklist: ticks kept on the phone; all ticked marks

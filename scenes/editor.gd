@@ -350,9 +350,12 @@ func _on_run() -> void:
 	run_button.disabled = false
 	code.release_focus()   # so the phone's keyboard goes and the panel is seen
 	if outcome.pass:
+		var app := get_tree().get_first_node_in_group("app")
+		var label: String = "NEXT STEP ›" if step_milestone != "" else (app.next_label(problem_id, review) if app else "NEXT ›")
 		next_button.visible = true
+		next_button.text = label
 		run_button.theme_type_variation = &""
-		verdict.show_pass(ResultsPanel.pass_line(p, reply, outcome), "NEXT STEP ›" if step_milestone != "" else "NEXT ›")
+		verdict.show_pass(ResultsPanel.pass_line(p, reply, outcome), label)
 	else:
 		verdict.show_fail(ResultsPanel.fail_line(p, reply, outcome))
 

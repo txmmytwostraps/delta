@@ -83,9 +83,10 @@ func replace_attempts(rows: Array) -> void:
 	recompute()
 
 
-## A verdict just happened: fold it in.
-func note_attempt(problem_id: String, passed: bool) -> void:
-	attempts().append({"problem_id": problem_id, "kind": "session", "result": "pass" if passed else "miss", "at": Progress.now_iso()})
+## A verdict just happened: fold it in, with the kind the account row gets
+## (new, review, review-late, practice, milestone), so XP counts it at once.
+func note_attempt(problem_id: String, kind: String, passed: bool) -> void:
+	attempts().append({"problem_id": problem_id, "kind": kind, "result": "pass" if passed else "miss", "at": Progress.now_iso()})
 	recompute()
 
 

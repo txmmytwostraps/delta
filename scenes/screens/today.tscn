@@ -30,6 +30,9 @@ layout_mode = 2
 theme_type_variation = &"Small"
 text = "// SATURDAY 09.06"
 
+[node name="XpHost" type="VBoxContainer" parent="Scroll/Body"]
+layout_mode = 2
+
 [node name="Count" type="Label" parent="Scroll/Body"]
 layout_mode = 2
 theme_type_variation = &"Muted"

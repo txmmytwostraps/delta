@@ -382,5 +382,40 @@ func runs_completed() -> int:
 	return count
 
 
+# ---- XP and level ----
+# The rule, in one place, from account data only (the progress, reviews and
+# attempts tables), so every machine and the phone compute the same numbers:
+#  - 10 XP for the first solve of a problem: a solved_at in the progress table;
+#  - 5 XP for a review done on the day it was due: an attempts row of kind
+#    "review" with result "pass", counted once per problem per day. A review
+#    done after its due day is logged as "review-late" and earns nothing;
+#  - 50 XP for a milestone step: a solved_at on a step id such as m1-s1;
+#  - practice-again, drills, variants and late reviews earn 0.
+#  Level = 1 + floor(XP / 500).
+const XP_PROBLEM := 10
+const XP_REVIEW := 5
+const XP_STEP := 50
+const XP_PER_LEVEL := 500
+
+
+func xp_info() -> Dictionary:
+	var problems := 0
+	var steps := 0
+	var step_re := RegEx.new()
+	step_re.compile("^m\\d+-s\\d+$")
+	for id in solved():
+		if step_re.search(str(id)):
+			steps += 1
+		elif Bank.has_problem(str(id)):
+			problems += 1
+	var seen := {}
+	for a in Scaffold.attempts():
+		if str(a.get("kind", "")) == "review" and str(a.get("result", "")) == "pass":
+			seen["%s@%s" % [str(a.get("problem_id", "")), Streak.day_key(str(a.get("at", "")))]] = true
+	var xp := problems * XP_PROBLEM + seen.size() * XP_REVIEW + steps * XP_STEP
+	var level := 1 + xp / XP_PER_LEVEL
+	return {"xp": xp, "level": level, "problems": problems, "reviews": seen.size(), "steps": steps, "into": xp % XP_PER_LEVEL, "to_next": XP_PER_LEVEL - (xp % XP_PER_LEVEL)}
+
+
 func level() -> int:
-	return route_topics().filter(func(t: Dictionary) -> bool: return not t.get("extra", false) and t.total > 0 and t.done == t.total).size() + 1
+	return int(xp_info().level)

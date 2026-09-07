@@ -126,6 +126,9 @@ func show_result(p: Dictionary, reply: Dictionary, outcome: Dictionary, with_row
 ## The verdict panel's one line for a pass: how many tests or checks
 ## passed, and anything the run decided (a review, a cleared topic).
 static func pass_line(p: Dictionary, reply: Dictionary, outcome: Dictionary) -> String:
+	# What the pass earned, when the record says: "+10 XP · first solve".
+	if str(outcome.get("xp", "")) != "":
+		return str(outcome.xp)
 	var result: Dictionary = reply.result
 	var checks := not p.has("signature")
 	var n := int(result.get("total", p.get("tests", []).size()))
