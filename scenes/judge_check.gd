@@ -1,9 +1,10 @@
 extends PanelContainer
 ## Runs the site's judge self-test cases on this device and compares the
 ## first three (good, wrong, broken) with the site's own results, recorded
-## from the site's judge. Opened from Profile.
+## from the site's judge. Opened from Profile. These cases keep the site's
+## self-test name solve(); the bank's problems name their own functions.
 
-const PROBLEM := {"tests": [
+const PROBLEM := {"fn": "solve", "tests": [
 	{"args": [[1, 2, 3]], "expect": 6},
 	{"args": [[]], "expect": 0},
 	{"args": [[-5, 5, 10]], "expect": 10},

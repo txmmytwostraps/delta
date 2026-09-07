@@ -164,7 +164,8 @@ func _test_row(p: Dictionary, t: Dictionary, r: Dictionary, rtype: String, print
 	head.clip_text = true
 	head.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	var frames: String = "after %d frame%s · " % [int(t.frames), "" if int(t.frames) == 1 else "s"] if t.has("frames") else ""
-	head.text = "%s %s%s%s" % ["✓" if r.pass else "✗", (str(t.name) + " · ") if t.has("name") else "", frames, Fmt.call_str(p, r.get("args", []))]
+	var call: String = Fmt.call_str(p, r.get("args", [])) if Fmt.shows_call(p) else ""
+	head.text = "%s %s%s%s" % ["✓" if r.pass else "✗", (str(t.name) + " · ") if t.has("name") else "", frames, call]
 	column.add_child(head)
 
 	var indent := MarginContainer.new()

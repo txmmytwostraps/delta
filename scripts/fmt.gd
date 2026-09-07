@@ -86,16 +86,39 @@ static func function_name(signature: String) -> String:
 	var re := RegEx.new()
 	re.compile("func\\s+(\\w+)")
 	var m := re.search(signature)
-	return m.get_string(1) if m else "solve"
+	return m.get_string(1) if m else "run"
 
 
-## "solve(3, 4)" for a test's arguments.
+## The function the tests call: the problem's "fn" (run() for problems that
+## print, a name of its own otherwise), read from the signature when missing.
+static func fn_name(problem: Dictionary) -> String:
+	return str(problem.get("fn", function_name(str(problem.get("signature", "")))))
+
+
+## True when the tests show a call: any function with a name of its own.
+## run() problems show only what they print.
+static func shows_call(problem: Dictionary) -> bool:
+	return fn_name(problem) != "run"
+
+
+## "take_hit(100)" for a test's arguments.
 static func call_str(problem: Dictionary, args: Array) -> String:
 	var types := param_types(str(problem.get("signature", "")))
 	var parts := []
 	for i in args.size():
 		parts.append(fmt_typed(args[i], types[i] if i < types.size() else ""))
-	return "%s(%s)" % [function_name(str(problem.get("signature", ""))), ", ".join(parts)]
+	return "%s(%s)" % [fn_name(problem), ", ".join(parts)]
+
+
+## A draft saved before the site renamed its functions still declares solve();
+## bring it onto the problem's function so it keeps running.
+static func migrate_draft(code: String, problem: Dictionary) -> String:
+	var fn := fn_name(problem)
+	if fn == "solve" or not code.contains("solve"):
+		return code
+	var re := RegEx.new()
+	re.compile("\\bsolve\\b")
+	return re.sub(code, fn, true)
 
 
 ## True when the problem checks printed lines only, with no return value.

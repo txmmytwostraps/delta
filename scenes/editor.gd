@@ -199,7 +199,7 @@ func _setup_code() -> void:
 	code.syntax_highlighter = highlighter
 	code.indent_use_spaces = false
 	code.indent_size = 4
-	code.text = str(Progress.draft(problem_id).get("code", p.get("starter", "")))
+	code.text = Fmt.migrate_draft(str(Progress.draft(problem_id).get("code", p.get("starter", ""))), p)
 
 
 func _insert(text: String) -> void:

@@ -210,7 +210,7 @@ func current_code() -> String:
 	if _widget and _widget.has_method("code"):
 		return _widget.code()
 	var p := Bank.problem(problem_id)
-	return str(Progress.draft(problem_id).get("code", p.get("starter", "")))
+	return Fmt.migrate_draft(str(Progress.draft(problem_id).get("code", p.get("starter", ""))), p)
 
 
 func _on_reset() -> void:

@@ -67,7 +67,10 @@ func instruction() -> String:
 		return ""
 	var t: Dictionary = _problem.tests[_test_index]
 	var frames: String = "after %d frame%s, " % [int(t.frames), "" if int(t.frames) == 1 else "s"] if t.has("frames") else ""
-	return "%s The judge calls %s%s. Pick an answer, then Run." % ["What does this print?" if _print_only else "What does this return?", frames, Fmt.call_str(_problem, t.get("args", []))]
+	var question: String = "What does this print?" if _print_only else "What does this return?"
+	if not Fmt.shows_call(_problem):
+		return "%s %sPick an answer, then Run." % [question, ("After " + frames.trim_suffix(", ") + ". ") if frames != "" else ""]
+	return "%s The judge calls %s%s. Pick an answer, then Run." % [question, frames, Fmt.call_str(_problem, t.get("args", []))]
 
 
 func code() -> String:
