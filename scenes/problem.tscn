@@ -199,6 +199,14 @@ theme_override_constants/margin_bottom = 16
 layout_mode = 2
 theme_override_constants/separation = 12
 
+[node name="Next" type="Button" parent="Column/Bar/BarMargin/Actions"]
+visible = false
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"Primary"
+text = "NEXT ›"
+
 [node name="Run" type="Button" parent="Column/Bar/BarMargin/Actions"]
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2

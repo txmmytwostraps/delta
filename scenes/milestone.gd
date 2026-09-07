@@ -42,10 +42,14 @@ var data: Dictionary = {}
 var step: Dictionary = {}
 var mode := ""
 var results := ResultsPanel.new()
+## The verdict after a run, over the bottom bar; see VerdictPanel.
+var verdict: VerdictPanel
 var stage: VBoxContainer
 var _widget: Control
 var _godot := false
 var _switching := 0
+## The last run, for Review and Hint once the panel has gone.
+var _last: Dictionary = {}
 
 
 func _ready() -> void:
@@ -53,10 +57,15 @@ func _ready() -> void:
 	data = Bank.milestone_data(milestone_id)
 	instruction_column.add_child(results)
 	results.clear()
+	verdict = VerdictPanel.attach(self)
+	verdict.next_pressed.connect(_go_next)
+	verdict.review_pressed.connect(_show_review)
+	verdict.retry_pressed.connect(func() -> void: stage.refresh())
+	verdict.hint_pressed.connect(_show_hint)
 	back.pressed.connect(queue_free)
 	run_button.pressed.connect(_on_run)
 	reset_button.pressed.connect(_on_reset)
-	next_button.pressed.connect(func() -> void: show_step(step_at + 1))
+	next_button.pressed.connect(_go_next)
 	Progress.changed.connect(_render_steps)
 	if meta.is_empty() or data.is_empty():
 		title.text = str(meta.get("title", "MILESTONE")).to_upper()
@@ -293,6 +302,7 @@ func set_mode(name: String) -> void:
 	var token := _switching
 	for i in MODES.size():
 		segments.get_child(i).button_pressed = MODES[i] == name
+	verdict.dismiss()
 	results.clear()
 	instruction_text.visible = true
 	instruction_text.text = "Preparing…"
@@ -345,6 +355,7 @@ func current_code() -> String:
 func _on_reset() -> void:
 	if _widget and _widget.has_method("reset"):
 		_widget.reset()
+	verdict.dismiss()
 	results.clear()
 	instruction_text.visible = true
 	if _widget:
@@ -363,7 +374,43 @@ func _on_run() -> void:
 	if not is_inside_tree():
 		return
 	var outcome := MilestoneStep.record(meta, data, step_at, reply)
-	results.show_result(step, reply, outcome, true)
-	stage.refresh()
+	_last = {"step": step, "reply": reply, "outcome": outcome}
+	# The page stays as it was until a button on the panel is tapped.
+	results.clear()
+	instruction_text.visible = true
 	_render_steps()
 	run_button.disabled = false
+	if outcome.pass:
+		var last: bool = step_at >= data.steps.size() - 1
+		verdict.show_pass(ResultsPanel.pass_line(step, reply, outcome), "GODOT LIST ›" if last else "NEXT STEP ›")
+	else:
+		verdict.show_fail(ResultsPanel.fail_line(step, reply, outcome))
+
+
+## Review: the step as it stands, with a ✓ or ✗ on every check.
+func _show_review() -> void:
+	if _last.is_empty():
+		return
+	stage.refresh()
+	instruction_text.visible = false
+	results.show_result(_last.step, _last.reply, _last.outcome, true)
+	scroll.scroll_vertical = 0
+
+
+## Hint: the checks, then the first hint still closed, opened and scrolled to.
+func _show_hint() -> void:
+	_show_review()
+	for child in hints.get_children():
+		if child is Button and child.text.begins_with("[+]"):
+			child.pressed.emit()
+			await get_tree().process_frame
+			scroll.ensure_control_visible(child)
+			return
+
+
+## Next ›: the next step, or the Godot list after the last one.
+func _go_next() -> void:
+	if step_at < data.steps.size() - 1:
+		show_step(step_at + 1)
+	else:
+		show_godot()

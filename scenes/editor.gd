@@ -41,6 +41,7 @@ func _item() -> Dictionary:
 @onready var saved: Label = $Margin/Column/TopBar/Saved
 @onready var reset_button: Button = $Margin/Column/TopBar/Reset
 @onready var run_button: Button = $Margin/Column/TopBar/Run
+@onready var next_button: Button = $Margin/Column/TopBar/Next
 @onready var code: CodeEdit = $Margin/Column/Body/Code
 @onready var side: VBoxContainer = $Margin/Column/Body/Side/SideColumn
 @onready var prompt: Label = $Margin/Column/Body/Side/SideColumn/Prompt
@@ -51,6 +52,8 @@ func _item() -> Dictionary:
 @onready var keys: HFlowContainer = $Margin/Column/Keys
 
 var results := ResultsPanel.new()
+## The verdict after a run, over the bottom of the screen; see VerdictPanel.
+var verdict: VerdictPanel
 var _save_timer: Timer
 var _marked := -1
 var _loading := true
@@ -75,6 +78,21 @@ func _ready() -> void:
 	solution_toggle.pressed.connect(_toggle_solution)
 	side.add_child(results)
 	results.clear()
+	verdict = VerdictPanel.attach(self)
+	verdict.next_pressed.connect(_go_next)
+	verdict.review_pressed.connect(func() -> void:
+		_after_verdict()
+		results.visible = true
+		_show_side())
+	verdict.retry_pressed.connect(func() -> void:
+		_after_verdict()
+		code.grab_focus())
+	verdict.hint_pressed.connect(func() -> void:
+		_after_verdict()
+		results.visible = true
+		_open_next_hint()
+		_show_side())
+	next_button.pressed.connect(_go_next)
 
 	_setup_code()
 	_render_hints(p)
@@ -326,15 +344,51 @@ func _on_run() -> void:
 		outcome = MilestoneStep.record(Bank.milestone(step_milestone), Bank.milestone_data(step_milestone), step_index, reply)
 	else:
 		outcome = Submission.record(p, reply, visit)
+	# Laid out now, shown once the verdict panel has gone.
 	results.show_result(p, reply, outcome, true)
+	results.visible = false
+	run_button.disabled = false
+	code.release_focus()   # so the phone's keyboard goes and the panel is seen
+	if outcome.pass:
+		next_button.visible = true
+		run_button.theme_type_variation = &""
+		verdict.show_pass(ResultsPanel.pass_line(p, reply, outcome), "NEXT STEP ›" if step_milestone != "" else "NEXT ›")
+	else:
+		verdict.show_fail(ResultsPanel.fail_line(p, reply, outcome))
+
+
+## What the run changed on the page, applied once the panel is dismissed:
+## the error line marked, the stage, the hint and solution locks.
+func _after_verdict() -> void:
 	_mark_error(results.error_line)
+	var p := _item()
 	if step_milestone != "":
 		_stage.refresh()
 	else:
 		_render_solution_lock(p)
 		_render_hints(p)
-	_show_side()
-	run_button.disabled = false
+
+
+## Opens the first hint that may open and is still closed.
+func _open_next_hint() -> void:
+	for child in hints.get_children():
+		if child is Button and not child.disabled and child.text.begins_with("[+]"):
+			child.pressed.emit()
+			return
+
+
+## Next ›: the next step of the milestone, or the next problem.
+func _go_next() -> void:
+	if _save_timer.time_left > 0:
+		_save_draft()
+	var app := get_tree().get_first_node_in_group("app")
+	if app == null:
+		return
+	if step_milestone != "":
+		var last: int = Bank.milestone_data(step_milestone).get("steps", []).size() - 1
+		app.open_milestone(step_milestone, mini(step_index + 1, last))
+	else:
+		app.open_next(problem_id, review)
 
 
 func _on_reset() -> void:
@@ -345,6 +399,7 @@ func _on_reset() -> void:
 	Progress.clear_draft(problem_id)
 	saved.text = ""
 	_mark_error(-1)
+	verdict.dismiss()
 	results.clear()
 	code.grab_focus()
 

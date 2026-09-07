@@ -52,6 +52,13 @@ layout_mode = 2
 theme_type_variation = &"Primary"
 text = "RUN"
 
+[node name="Next" type="Button" parent="Margin/Column/TopBar"]
+visible = false
+custom_minimum_size = Vector2(160, 72)
+layout_mode = 2
+theme_type_variation = &"Primary"
+text = "NEXT ›"
+
 [node name="PromptLine" type="Button" parent="Margin/Column"]
 visible = false
 custom_minimum_size = Vector2(0, 72)

@@ -32,16 +32,23 @@ var visit: Dictionary = {}
 @onready var resolved: Button = $Column/NotesDrawer/NotesColumn/NoteRow/Resolved
 @onready var saved: Label = $Column/NotesDrawer/NotesColumn/NoteRow/Saved
 @onready var close_note: Button = $Column/NotesDrawer/NotesColumn/NoteRow/CloseNote
+@onready var next_button: Button = $Column/Bar/BarMargin/Actions/Next
 @onready var run_button: Button = $Column/Bar/BarMargin/Actions/Run
 @onready var reset_button: Button = $Column/Bar/BarMargin/Actions/Reset
 @onready var note_button: Button = $Column/Bar/BarMargin/Actions/NoteButton
 
 var mode := ""
 var results := ResultsPanel.new()
+## The verdict after a run, over the bottom bar; see VerdictPanel.
+var verdict: VerdictPanel
 var _widget: Control
 var _save_timer: Timer
 var _loading := true
 var _switching := 0
+## The last run, for Review and Hint once the panel has gone.
+var _last: Dictionary = {}
+var _hint_at := -1
+var _hint_nodes: Array = []
 
 
 func _ready() -> void:
@@ -49,6 +56,11 @@ func _ready() -> void:
 		visit = {"review": review, "review_recorded": false, "attempt_fails": 0}
 	instruction_column.add_child(results)
 	results.clear()
+	verdict = VerdictPanel.attach(self)
+	verdict.next_pressed.connect(_go_next)
+	verdict.review_pressed.connect(_show_review)
+	verdict.hint_pressed.connect(_show_hint)
+	next_button.pressed.connect(_go_next)
 	back.pressed.connect(close)
 	run_button.pressed.connect(_on_run)
 	reset_button.pressed.connect(_on_reset)
@@ -144,6 +156,8 @@ func set_mode(name: String) -> void:
 	_switching += 1
 	var token := _switching
 	segments.get_node(name.capitalize()).button_pressed = true
+	verdict.dismiss()
+	_clear_hint()
 	results.clear()
 	instruction_text.visible = true
 	instruction_text.text = "Preparing…"
@@ -216,6 +230,8 @@ func current_code() -> String:
 func _on_reset() -> void:
 	if _widget and _widget.has_method("reset"):
 		_widget.reset()
+	verdict.dismiss()
+	_clear_hint()
 	results.clear()
 	instruction_text.visible = true
 	if _widget:
@@ -240,9 +256,9 @@ func _on_run() -> void:
 	if not is_inside_tree():
 		return
 	var outcome := Submission.record(p, reply, visit)
-	results.show_result(p, reply, outcome, true)
-	_render_status()
 	run_button.disabled = false
+	var line := ResultsPanel.pass_line(p, reply, outcome) if outcome.pass else ResultsPanel.fail_line(p, reply, outcome)
+	_show_verdict(p, reply, outcome, true, line)
 
 
 ## Print mode: the pick is graded and recorded like a run, shown without
@@ -254,16 +270,100 @@ func _grade_pick() -> void:
 		return
 	run_button.disabled = true
 	var outcome := Submission.record(p, graded.reply, visit)
+	var extra := ""
 	if outcome.verdict.begins_with("All tests pass"):
 		outcome.verdict = "Right · solved"
 	elif outcome.verdict.begins_with("Not yet"):
 		outcome.verdict = "Not that one · " + Submission.miss_text(p)
+	else:
+		extra = " · " + outcome.verdict    # a review's or a topic's verdict
 	if not graded.correct and outcome.note == "":
 		outcome.note = "The right answer is marked. Reset to try again."
-	instruction_text.visible = false
-	results.show_result(p, graded.reply, outcome, false)
-	scroll.scroll_vertical = 0
+	var does := "prints" if _widget.print_only() else "returns"
+	var line: String
+	if graded.correct:
+		line = "Right · it %s %s%s" % [does, _widget.right_text(), extra]
+	else:
+		line = "It %s %s · you picked %s%s" % [does, _widget.right_text(), _widget.picked_text(), extra]
+	_show_verdict(p, graded.reply, outcome, false, line)
+
+
+## The verdict goes on the panel; the page stays as it was until a button
+## on the panel is tapped. A pass puts Next › in the bar for good.
+func _show_verdict(p: Dictionary, reply: Dictionary, outcome: Dictionary, with_rows: bool, line: String) -> void:
+	_last = {"p": p, "reply": reply, "outcome": outcome, "rows": with_rows}
+	_clear_hint()
+	results.clear()
+	instruction_text.visible = true
 	_render_status()
+	if outcome.pass:
+		next_button.visible = true
+		run_button.theme_type_variation = &""
+		verdict.show_pass(line)
+	else:
+		verdict.show_fail(line)
+
+
+## Review: the solved state, your code with the checks and a ✓ on each.
+func _show_review() -> void:
+	if _last.is_empty():
+		return
+	instruction_text.visible = false
+	results.show_result(_last.p, _last.reply, _last.outcome, _last.rows)
+	scroll.scroll_vertical = 0
+
+
+## Hint: the next hint that may open at this topic's level, above the
+## failing checks. Each tap opens one more; a locked one says what opens it.
+func _show_hint() -> void:
+	_show_review()
+	_clear_hint()
+	var p := Bank.problem(problem_id)
+	var list: Array = p.get("hints", [])
+	if list.is_empty() and p.has("hint"):
+		list = [p.hint]
+	var label := Label.new()
+	label.theme_type_variation = &"Small"
+	var text := Label.new()
+	text.theme_type_variation = &"Muted"
+	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if list.is_empty():
+		label.text = "NO HINTS FOR THIS ONE"
+		text.text = "Type mode shows the reference solution after %d misses." % Submission.unlock_after(p)
+	else:
+		var i := mini(_hint_at + 1, list.size() - 1)
+		var level := Scaffold.level_for(str(p.get("concept", "")))
+		var misses := int(Progress.fails().get(problem_id, 0))
+		if Scaffold.hint_open(level, i, misses) or Progress.is_solved(problem_id):
+			_hint_at = i
+			label.text = "HINT %d OF %d" % [i + 1, list.size()]
+			text.text = str(list[i]).replace("`", "")
+			Week.log_hint(problem_id, i)
+		else:
+			label.text = "HINT %d OF %d · LOCKED" % [i + 1, list.size()]
+			text.text = "This hint opens %s. Hints are %s for this topic; change that on the Route." % [Scaffold.hint_lock_text(level), level]
+	instruction_column.add_child(label)
+	instruction_column.move_child(label, 0)
+	instruction_column.add_child(text)
+	instruction_column.move_child(text, 1)
+	_hint_nodes = [label, text]
+
+
+func _clear_hint() -> void:
+	for node in _hint_nodes:
+		if is_instance_valid(node):
+			instruction_column.remove_child(node)
+			node.queue_free()
+	_hint_nodes = []
+
+
+## Next ›: the next review, or the next unsolved problem in the topic.
+func _go_next() -> void:
+	if _save_timer.time_left > 0:
+		_save_note()
+	var app := get_tree().get_first_node_in_group("app")
+	if app:
+		app.open_next(problem_id, review)
 
 
 # ---- notes ----

@@ -107,6 +107,19 @@ func grade() -> Dictionary:
 	return {"correct": correct, "reply": reply}
 
 
+## The right answer and the pick, as the rows show them, for the verdict line.
+func right_text() -> String:
+	return _answer_text(_answers[_correct], Fmt.return_type(str(_problem.get("signature", "")))) if _correct >= 0 else ""
+
+
+func picked_text() -> String:
+	return _answer_text(_answers[selected], Fmt.return_type(str(_problem.get("signature", "")))) if selected >= 0 else ""
+
+
+func print_only() -> bool:
+	return _print_only
+
+
 func render() -> void:
 	for child in get_children():
 		remove_child(child)

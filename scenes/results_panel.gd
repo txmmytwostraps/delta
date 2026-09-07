@@ -123,6 +123,105 @@ func show_result(p: Dictionary, reply: Dictionary, outcome: Dictionary, with_row
 	_show_errors(reply.errors, "")
 
 
+## The verdict panel's one line for a pass: how many tests or checks
+## passed, and anything the run decided (a review, a cleared topic).
+static func pass_line(p: Dictionary, reply: Dictionary, outcome: Dictionary) -> String:
+	var result: Dictionary = reply.result
+	var checks := not p.has("signature")
+	var n := int(result.get("total", p.get("tests", []).size()))
+	var noun := ("check" if n == 1 else "checks") if checks else ("test" if n == 1 else "tests")
+	var text := "%d %s passed" % [n, noun] if n != 1 else "The %s passed" % noun
+	var extra := str(outcome.get("verdict", ""))
+	if extra.begins_with("Step ") and extra.contains(" · "):
+		extra = extra.get_slice(" · ", 1)     # "milestone complete"
+	elif extra.begins_with("Step ") or extra.begins_with("All tests pass"):
+		extra = ""
+	if extra != "":
+		text += " · " + extra
+	return text
+
+
+## The verdict panel's one line for a miss: the first failing check with
+## expected and yours, or the error with its line.
+static func fail_line(p: Dictionary, reply: Dictionary, outcome: Dictionary) -> String:
+	var result: Dictionary = reply.result
+	if reply.timed_out:
+		return "Took too long · " + str(result.get("error", "check for an infinite loop"))
+	if result.status == "compile_error":
+		return "Did not compile · " + _first_error(reply.errors, "Parse error")
+	if result.status == "error":
+		return "Stopped with an error · " + _first_error(reply.errors, str(result.get("error", "")))
+	if result.status != "ok":
+		return "Could not run · " + str(result.get("error", ""))
+	var checks := not p.has("signature")
+	var rtype := Fmt.return_type(str(p.get("signature", "")))
+	var print_only := Fmt.print_only(p)
+	for i in result.results.size():
+		var r: Dictionary = result.results[i]
+		if r.get("pass", false):
+			continue
+		var t: Dictionary = p.tests[i] if i < p.tests.size() else {}
+		var head := str(t.get("name", ""))
+		if head == "" and not checks and Fmt.shows_call(p):
+			head = Fmt.call_str(p, r.get("args", []))
+		var lead := (head + " · ") if head != "" else ""
+		if r.has("error"):
+			return lead + str(r.error)
+		if checks:
+			var should: String = Fmt.to_json(r.get("expect", null)) if t.has("read") else Fmt.to_json(t.get("out", []))
+			var gave: String = Fmt.to_json(r.get("got", null)) if t.has("read") else Fmt.to_json(r.get("out", []))
+			return "%sshould be %s · yours %s" % [lead, should, gave]
+		var expected := _one_line(_expected_text_static(t, rtype, print_only))
+		var got := _one_line(_got_text_static(t, r, rtype, print_only))
+		return "%sexpected %s · yours %s" % [lead, expected, got]
+	return str(outcome.get("verdict", "Not yet"))
+
+
+## The first error the judge reported, with its line when it named one.
+static func _first_error(lines: Array, fallback: String) -> String:
+	var text := "\n".join(lines)
+	var first := str(lines[0]) if lines.size() > 0 else fallback
+	first = first.get_slice("\n", 0).strip_edges()
+	var re := RegEx.new()
+	re.compile("line (\\d+)")
+	var m := re.search(text)
+	if m and not first.contains("line " + m.get_string(1)):
+		first = "line %s · %s" % [m.get_string(1), first]
+	return first
+
+
+static func _one_line(text: String) -> String:
+	return " ⏎ ".join(text.split("\n"))
+
+
+static func _expected_text_static(t: Dictionary, rtype: String, print_only: bool) -> String:
+	if print_only:
+		return _lines_static(t.get("out", []), "(nothing printed)")
+	var text := Fmt.fmt_typed(t.get("expect", null), rtype)
+	if t.has("out"):
+		text += "\nprints " + _lines_static(t.out, "nothing")
+	return text
+
+
+static func _got_text_static(t: Dictionary, r: Dictionary, rtype: String, print_only: bool) -> String:
+	var out: Array = r.get("out", [])
+	if print_only:
+		return _lines_static(out, "(nothing printed)")
+	var text := Fmt.fmt_typed(r.get("got", null), rtype)
+	if t.has("out"):
+		text += "\nprints " + _lines_static(out, "nothing")
+	return text
+
+
+static func _lines_static(lines: Array, when_empty: String) -> String:
+	if lines.is_empty():
+		return when_empty
+	var strings := []
+	for line in lines:
+		strings.append(str(line))
+	return "\n".join(strings)
+
+
 ## A milestone check: its name, what it does in words, should be, and yours.
 func _check_row(t: Dictionary, r: Dictionary) -> Control:
 	var column := VBoxContainer.new()
@@ -192,31 +291,15 @@ func _test_row(p: Dictionary, t: Dictionary, r: Dictionary, rtype: String, print
 
 
 func _expected_text(t: Dictionary, rtype: String, print_only: bool) -> String:
-	if print_only:
-		return _lines(t.get("out", []), "(nothing printed)")
-	var text := Fmt.fmt_typed(t.get("expect", null), rtype)
-	if t.has("out"):
-		text += "\nprints " + _lines(t.out, "nothing")
-	return text
+	return _expected_text_static(t, rtype, print_only)
 
 
 func _got_text(t: Dictionary, r: Dictionary, rtype: String, print_only: bool) -> String:
-	var out: Array = r.get("out", [])
-	if print_only:
-		return _lines(out, "(nothing printed)")
-	var text := Fmt.fmt_typed(r.get("got", null), rtype)
-	if t.has("out"):
-		text += "\nprints " + _lines(out, "nothing")
-	return text
+	return _got_text_static(t, r, rtype, print_only)
 
 
 func _lines(lines: Array, when_empty: String) -> String:
-	if lines.is_empty():
-		return when_empty
-	var strings := []
-	for line in lines:
-		strings.append(str(line))
-	return "\n".join(strings)
+	return _lines_static(lines, when_empty)
 
 
 func _show_errors(lines: Array, fallback: String) -> void:

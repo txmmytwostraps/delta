@@ -16,6 +16,7 @@ var _watch: Array = []
 var _specs: Array = []
 var _history: Array = []
 var _busy := false
+var _again := false
 
 
 func _init() -> void:
@@ -97,12 +98,21 @@ func refresh() -> void:
 
 
 func replay(animate_last: bool) -> void:
-	if _busy or _get_code.is_null():
+	if _get_code.is_null():
+		return
+	if _busy:
+		# A tap or an edit while the judge is still on the last one: replayed
+		# once more when that comes back, so nothing is lost.
+		_again = true
 		return
 	_busy = true
 	var reply: Dictionary = await Grader.run(_get_code.call(), {"tests": [{"script": _history.duplicate(true), "trace": _watch, "expect": null}]})
 	_busy = false
 	if not is_inside_tree():
+		return
+	if _again:
+		_again = false
+		replay(animate_last)
 		return
 	var result: Dictionary = reply.result
 	if result.status != "ok":

@@ -30,6 +30,23 @@ static func record(problem: Dictionary, reply: Dictionary, page: Dictionary) -> 
 	return v if not v.is_empty() else {"pass": true, "verdict": "All tests pass · solved", "note": ""}
 
 
+## Next › after a solve: in a review run, the next review still pending
+## today; otherwise the next unsolved problem in the topic. "" when there is
+## none (the run is done, or the topic is cleared).
+static func next_problem(id: String, review: bool) -> String:
+	if review:
+		for r in Reviews.due_today(Progress.today_key()).pending:
+			var rid := str(r.problem_id)
+			if rid != id and Bank.has_problem(rid):
+				return rid
+		return ""
+	var p := Bank.problem(id)
+	for q in Bank.problems_in(str(p.get("concept", ""))):
+		if q.id != id and not Progress.is_solved(q.id):
+			return q.id
+	return ""
+
+
 ## Misses before the reference solution unlocks: 2, or 3 on a topic at the
 ## minimal hint level.
 static func unlock_after(problem: Dictionary) -> int:

@@ -76,6 +76,19 @@ func open_editor(id: String, review: bool = false) -> void:
 	screens.add_child(page)
 
 
+## Next › after a solve: the next review in a review run, else the next
+## unsolved problem in the topic. When there is none the page closes and
+## the tab underneath shows (the topic-cleared screen goes here once it
+## exists). Returns whether a problem was opened.
+func open_next(id: String, review: bool) -> bool:
+	var next := Submission.next_problem(id, review)
+	if next == "":
+		close_pages()
+		return false
+	open_problem(next, review)
+	return true
+
+
 func visit_for(id: String, review: bool) -> Dictionary:
 	if not _visits.has(id):
 		_visits[id] = {"review": review, "review_recorded": false, "attempt_fails": 0}
