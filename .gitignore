@@ -13,3 +13,8 @@ delta-logo/
 
 # The problem bank and route, pulled from the site repo by tools/fetch-site.sh
 bank/
+
+# Built by CI from android/plugin; the Android build template is unpacked here too
+addons/delta_notify/bin/
+android/build/
+android/.build_version

@@ -3,13 +3,14 @@ name: Build APK
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: apk
+  group: apk-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -20,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-java@v4
         with:
@@ -41,7 +44,7 @@ jobs:
           path: |
             ~/godot
             ~/.local/share/godot/export_templates
-          key: godot-${{ env.GODOT_VERSION }}-android-v1
+          key: godot-${{ env.GODOT_VERSION }}-android-v2
 
       - name: Download Godot and the Android export templates
         if: steps.cache-godot.outputs.cache-hit != 'true'
@@ -55,7 +58,7 @@ jobs:
           chmod +x ~/godot/godot
           curl -sSL -o templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
           unzip -j -q templates.tpz \
-            templates/android_debug.apk templates/android_release.apk templates/version.txt \
+            templates/android_debug.apk templates/android_release.apk templates/android_source.zip templates/version.txt \
             -d ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
           rm -f godot.zip templates.tpz
 
@@ -70,57 +73,126 @@ jobs:
           [resource]
           export/android/android_sdk_path = "$ANDROID_HOME"
           export/android/java_sdk_path = "$JAVA_HOME"
-          export/android/debug_keystore = "$PWD/debug.keystore"
-          export/android/debug_keystore_user = "androiddebugkey"
-          export/android/debug_keystore_pass = "android"
+          export/android/debug_keystore = "$PWD/signing.keystore"
+          export/android/debug_keystore_user = "$KEYSTORE_USER"
+          export/android/debug_keystore_pass = "$KEYSTORE_PASSWORD"
           EOF
-
-      # The debug key comes from the DEBUG_KEYSTORE_BASE64 secret so every
-      # build installs over the last one. Without the secret a fresh key is
-      # made, and the phone then wants the old build uninstalled first.
-      - name: Debug signing key
         env:
+          KEYSTORE_USER: ${{ secrets.RELEASE_KEYSTORE_USER || 'androiddebugkey' }}
+          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD || 'android' }}
+
+      # Every build is signed with one key so each installs over the last:
+      # the release key from the RELEASE_KEYSTORE_* secrets when they exist,
+      # else the debug key in DEBUG_KEYSTORE_BASE64, else a fresh key (and
+      # the phone then wants the old build uninstalled first).
+      - name: Signing key
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_USER: ${{ secrets.RELEASE_KEYSTORE_USER }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
         run: |
           set -e
-          if [ -n "$DEBUG_KEYSTORE_BASE64" ]; then
-            echo "$DEBUG_KEYSTORE_BASE64" | base64 -d > debug.keystore
+          user="androiddebugkey"; pass="android"
+          if [ -n "$RELEASE_KEYSTORE_BASE64" ]; then
+            echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > signing.keystore
+            user="$RELEASE_KEYSTORE_USER"; pass="$RELEASE_KEYSTORE_PASSWORD"
+            echo "signing with the release key"
+          elif [ -n "$DEBUG_KEYSTORE_BASE64" ]; then
+            echo "$DEBUG_KEYSTORE_BASE64" | base64 -d > signing.keystore
+            echo "signing with the debug key"
           else
-            keytool -genkeypair -v -keystore debug.keystore -storepass android -keypass android \
+            keytool -genkeypair -v -keystore signing.keystore -storepass android -keypass android \
               -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
               -dname "CN=Android Debug,O=Android,C=US" > /dev/null 2>&1
+            echo "signing with a fresh key"
           fi
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$PWD/debug.keystore" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$PWD/signing.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=$user" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=$pass" >> "$GITHUB_ENV"
+
+      # The gradle build: Godot's Android source template unpacked where the
+      # editor would put it, so the reminders plugin can be built in.
+      - name: Unpack the Android build template
+        run: |
+          set -e
+          mkdir -p android/build
+          unzip -q -o ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable/android_source.zip -d android/build
+          echo "${GODOT_VERSION}.stable" > android/.build_version
+          touch android/build/.gdignore
+          chmod +x android/build/gradlew || true
+
+      - name: Compile the reminders plugin
+        run: |
+          set -e
+          lib=$(find android/build -name "godot-lib*debug*.aar" | head -1)
+          mkdir -p /tmp/godotlib /tmp/plugin addons/delta_notify/bin
+          unzip -q -o "$lib" classes.jar -d /tmp/godotlib
+          javac -source 17 -target 17 -Xlint:-options \
+            -cp "$ANDROID_HOME/platforms/android-35/android.jar:/tmp/godotlib/classes.jar" \
+            -d /tmp/plugin android/plugin/src/io/github/txmmytwostraps/delta/*.java
+          jar cf addons/delta_notify/bin/delta_notify.jar -C /tmp/plugin .
+          ls -la addons/delta_notify/bin
 
       - name: Pull the problem bank from the site repo
         run: bash tools/fetch-site.sh
 
+      # A tag v1.2.3 becomes version 1.2.3; the version code counts commits,
+      # so every build is newer than the one before.
+      - name: Stamp the version
+        run: |
+          set -e
+          code=$(git rev-list --count HEAD)
+          sed -i "s|^version/code=.*|version/code=$code|" export_presets.cfg
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            name="${GITHUB_REF#refs/tags/v}"
+            sed -i "s|^version/name=.*|version/name=\"$name\"|" export_presets.cfg
+            sed -i "s|^config/version=.*|config/version=\"$name\"|" project.godot
+          fi
+          grep -n "version/" export_presets.cfg
+
       - name: Import the project
         run: ~/godot/godot --headless --path . --import --quit || true
 
-      - name: Export the debug APK
+      # The debug template on purpose, like the site's judge: it keeps
+      # Godot's runtime checks, so a division by zero is an error rather than
+      # a crash. The signing key decides whether it is the release build.
+      - name: Export the APK
         run: |
           set -e
           mkdir -p build
-          ~/godot/godot --headless --path . --export-debug Android build/delta-debug.apk
-          test -f build/delta-debug.apk
+          ~/godot/godot --headless --path . --export-debug Android build/delta.apk
+          test -f build/delta.apk
           ls -la build
 
       - uses: actions/upload-artifact@v4
         with:
-          name: delta-debug
-          path: build/delta-debug.apk
+          name: delta-apk
+          path: build/delta.apk
 
-      # A rolling pre-release, so the newest build always sits at one address:
+      # Pushes to main: a rolling pre-release, so the newest build always sits at
       # https://github.com/txmmytwostraps/delta/releases/download/debug/delta-debug.apk
       - name: Publish as the "debug" pre-release
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -e
+          cp build/delta.apk build/delta-debug.apk
           gh release delete debug --yes --cleanup-tag || true
           gh release create debug build/delta-debug.apk --prerelease \
             --title "Debug build" \
             --notes "Latest build of main. Open delta-debug.apk on the phone to install it."
+
+      # Tags: a release whose newest APK is always at
+      # https://github.com/txmmytwostraps/delta/releases/latest/download/delta.apk
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          tag="${GITHUB_REF#refs/tags/}"
+          gh release create "$tag" build/delta.apk \
+            --title "Delta $tag" \
+            --notes "Install: open delta.apk on the phone. Same account and progress as the site."

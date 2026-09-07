@@ -12,6 +12,8 @@ extends MarginContainer
 @onready var size_less: Button = $Scroll/Body/Settings/Column/SetSize/SizeLess
 @onready var size_more: Button = $Scroll/Body/Settings/Column/SetSize/SizeMore
 @onready var reminder_value: Label = $Scroll/Body/Settings/Column/Reminder/ReminderColumn/ReminderValue
+@onready var reminder_toggle: Button = $Scroll/Body/Settings/Column/Reminder/ReminderColumn/ReminderToggle
+@onready var update_button: Button = $Scroll/Body/Update
 @onready var time_less: Button = $Scroll/Body/Settings/Column/Reminder/TimeLess
 @onready var time_more: Button = $Scroll/Body/Settings/Column/Reminder/TimeMore
 @onready var sync_status: Label = $Scroll/Body/Sync/Column/Status
@@ -23,8 +25,6 @@ extends MarginContainer
 
 
 func _ready() -> void:
-	var version := str(ProjectSettings.get_setting("application/config/version", ""))
-	version_label.text = "Delta %s · problems from %s" % [version, Bank.site_commit.substr(0, 7)]
 	sign_out_button.pressed.connect(_on_sign_out)
 	week_button.pressed.connect(func() -> void:
 		var app := get_tree().get_first_node_in_group("app")
@@ -40,6 +40,10 @@ func _ready() -> void:
 	size_more.pressed.connect(func() -> void: Progress.set_new_per_day(Progress.new_per_day() + 1))
 	time_less.pressed.connect(func() -> void: Progress.set_reminder_time(_shift_time(Progress.reminder_time(), -30)))
 	time_more.pressed.connect(func() -> void: Progress.set_reminder_time(_shift_time(Progress.reminder_time(), 30)))
+	reminder_toggle.pressed.connect(func() -> void: Reminders.set_enabled(not Reminders.enabled()))
+	update_button.pressed.connect(func() -> void: OS.shell_open(Updates.latest_url))
+	Reminders.changed.connect(_refresh)
+	Updates.checked.connect(_refresh)
 	Auth.changed.connect(_refresh)
 	Progress.changed.connect(_refresh)
 	Reviews.changed.connect(_refresh)
@@ -65,7 +69,13 @@ func _refresh() -> void:
 	var runs := Progress.runs_completed()
 	streak_note.text = "%d problem%s solved · level %d · %d full run%s" % [solved, "" if solved == 1 else "s", Progress.level(), runs, "" if runs == 1 else "s"]
 	set_size_value.text = str(Progress.new_per_day())
-	reminder_value.text = Progress.reminder_time()
+	var on := Reminders.enabled()
+	reminder_value.text = "%s · %s" % [Progress.reminder_time(), "on" if on else "off"]
+	reminder_toggle.text = "TURN OFF" if on else "TURN ON"
+	reminder_toggle.visible = Reminders.available() or OS.has_feature("pc")
+	update_button.visible = Updates.update_available()
+	update_button.text = "UPDATE AVAILABLE · %s" % Updates.latest
+	version_label.text = "Delta %s · problems from %s%s" % [Updates.current(), Bank.site_commit.substr(0, 7), "" if Updates.latest == "" else " · latest release %s" % Updates.latest]
 	_refresh_sync()
 
 

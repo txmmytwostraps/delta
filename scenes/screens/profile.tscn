@@ -155,8 +155,16 @@ text = "19:00"
 [node name="ReminderNote" type="Label" parent="Scroll/Body/Settings/Column/Reminder/ReminderColumn"]
 layout_mode = 2
 theme_type_variation = &"Detail"
-text = "One notification a day at most, when reviews are due or the run is not done. Reminders arrive with a later build."
+text = "One notification a day at most, when reviews are due or the run is not done."
 autowrap_mode = 3
+
+[node name="ReminderToggle" type="Button" parent="Scroll/Body/Settings/Column/Reminder/ReminderColumn"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 0
+mouse_filter = 1
+theme_type_variation = &"Link"
+text = "TURN ON"
 
 [node name="TimeLess" type="Button" parent="Scroll/Body/Settings/Column/Reminder"]
 custom_minimum_size = Vector2(88, 88)
@@ -214,7 +222,16 @@ layout_mode = 2
 mouse_filter = 1
 text = "SIGN OUT"
 
+[node name="Update" type="Button" parent="Scroll/Body"]
+visible = false
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+mouse_filter = 1
+theme_type_variation = &"Primary"
+text = "UPDATE AVAILABLE"
+
 [node name="Version" type="Label" parent="Scroll/Body"]
 layout_mode = 2
 theme_type_variation = &"Dim"
 text = "Delta"
+autowrap_mode = 3
