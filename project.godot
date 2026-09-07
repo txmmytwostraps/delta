@@ -23,6 +23,22 @@ Progress="*res://scripts/progress.gd"
 Reviews="*res://scripts/reviews.gd"
 Notes="*res://scripts/notes.gd"
 Sync="*res://scripts/sync.gd"
+Grader="*res://scripts/grader.gd"
+
+[debug]
+
+; Script errors still go to the log file below; not also to the console, which
+; is slow on a phone when a runaway script prints thousands of them.
+settings/stdout/print_error_messages=false
+; Script errors are written to this file so the app can show them under a
+; run, the way the site shows the judge's error lines.
+file_logging/enable_file_logging=true
+file_logging/log_path="user://logs/delta.log"
+file_logging/max_log_files=2
+; Runaway recursion in a submission is reported after this many calls. Godot
+; prints a line per unwound call, so a small limit keeps the report quick;
+; the course never recurses this deep.
+settings/gdscript/max_call_stack=64
 
 [display]
 

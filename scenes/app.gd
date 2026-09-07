@@ -3,6 +3,7 @@ extends VBoxContainer
 ## and problem pages opened on top of them.
 
 const ProblemScene := preload("res://scenes/problem.tscn")
+const JudgeCheckScene := preload("res://scenes/judge_check.tscn")
 
 @onready var screens: MarginContainer = $Screens
 @onready var tabs: HBoxContainer = $TabBar/Tabs
@@ -18,12 +19,19 @@ func _ready() -> void:
 
 
 ## Opens a problem over the current screen. Its Back button closes it, and
-## so does picking a tab.
-func open_problem(id: String) -> void:
+## so does picking a tab. review: opened from the review slot, so the first
+## verdict decides the review.
+func open_problem(id: String, review: bool = false) -> void:
 	close_pages()
 	var page := ProblemScene.instantiate()
 	page.problem_id = id
+	page.review = review
 	screens.add_child(page)
+
+
+func open_judge_check() -> void:
+	close_pages()
+	screens.add_child(JudgeCheckScene.instantiate())
 
 
 func close_pages() -> void:

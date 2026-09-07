@@ -79,10 +79,60 @@ layout_mode = 2
 theme_type_variation = &"Code"
 text = "func solve():"
 
+[node name="Run" type="Button" parent="Margin/Column/Scroll/Body"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+mouse_filter = 1
+theme_type_variation = &"Primary"
+text = "RUN"
+
 [node name="CodeNote" type="Label" parent="Margin/Column/Scroll/Body"]
 layout_mode = 2
 theme_type_variation = &"Dim"
-text = "Solving on the phone comes next; for now the code is shown as it is."
+text = "Run checks the code above against the tests. Writing your own code on the phone comes next."
+autowrap_mode = 3
+
+[node name="Results" type="VBoxContainer" parent="Margin/Column/Scroll/Body"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Verdict" type="Label" parent="Margin/Column/Scroll/Body/Results"]
+layout_mode = 2
+theme_type_variation = &"Heading3"
+autowrap_mode = 3
+
+[node name="Count" type="Label" parent="Margin/Column/Scroll/Body/Results"]
+layout_mode = 2
+theme_type_variation = &"Small"
+
+[node name="VerdictNote" type="Label" parent="Margin/Column/Scroll/Body/Results"]
+layout_mode = 2
+theme_type_variation = &"Muted"
+autowrap_mode = 3
+
+[node name="Tests" type="VBoxContainer" parent="Margin/Column/Scroll/Body/Results"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="OutputLabel" type="Label" parent="Margin/Column/Scroll/Body/Results"]
+layout_mode = 2
+theme_type_variation = &"Small"
+text = "OUTPUT"
+
+[node name="Output" type="Label" parent="Margin/Column/Scroll/Body/Results"]
+layout_mode = 2
+theme_type_variation = &"Code"
+autowrap_mode = 3
+
+[node name="ErrorsLabel" type="Label" parent="Margin/Column/Scroll/Body/Results"]
+layout_mode = 2
+theme_type_variation = &"Small"
+text = "ERRORS"
+
+[node name="Errors" type="Label" parent="Margin/Column/Scroll/Body/Results"]
+layout_mode = 2
+theme_type_variation = &"Error"
 autowrap_mode = 3
 
 [node name="NoteLabel" type="Label" parent="Margin/Column/Scroll/Body"]

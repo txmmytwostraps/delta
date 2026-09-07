@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Pulls the problem bank and route data from the practice site's repository
-# at the commit named in SITE_COMMIT, and writes bank/problems.json and
-# bank/route.json, which the app reads. bank/ is not committed: run this
+# at the commit named in SITE_COMMIT, and writes bank/problems.json,
+# bank/route.json and the judge scripts under bank/judge/, which the app reads. bank/ is not committed: run this
 # after cloning and again whenever SITE_COMMIT changes.
 #
 #   tools/fetch-site.sh
@@ -21,4 +21,7 @@ tar -xzf "$work/site.tar.gz" -C "$work"
 
 rm -rf bank
 node tools/build-bank.mjs "$work/gdscript-practice-$commit" bank
+# The judge, verbatim: the base class every submission extends, and the runner.
+mkdir -p bank/judge
+cp "$work/gdscript-practice-$commit"/judge/judge.gd "$work/gdscript-practice-$commit"/judge/runner.gd bank/judge/
 echo "$commit" > bank/COMMIT

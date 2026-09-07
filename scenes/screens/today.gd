@@ -117,7 +117,7 @@ func _slot(slot: Dictionary, active: bool) -> Control:
 		tap.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		for box_name in ["normal", "hover", "pressed", "focus"]:
 			tap.add_theme_stylebox_override(box_name, StyleBoxEmpty.new())
-		tap.pressed.connect(func() -> void: _open(slot.first_id))
+		tap.pressed.connect(func() -> void: _open(slot.first_id, slot.kind == "review"))
 		panel.add_child(tap)
 	return panel
 
@@ -138,10 +138,10 @@ func _action(text: String, id: String) -> Button:
 	return button
 
 
-func _open(id: String) -> void:
+func _open(id: String, review: bool = false) -> void:
 	var app := get_tree().get_first_node_in_group("app")
 	if app:
-		app.open_problem(id)
+		app.open_problem(id, review)
 
 
 func _clear(container: Node) -> void:

@@ -8,6 +8,7 @@ extends MarginContainer
 @onready var streak_note: Label = $Scroll/Body/Streak/Column/Note
 @onready var sync_status: Label = $Scroll/Body/Sync/Column/Status
 @onready var sync_now_button: Button = $Scroll/Body/Sync/Column/SyncNow
+@onready var judge_check_button: Button = $Scroll/Body/JudgeCheck
 @onready var sign_out_button: Button = $Scroll/Body/SignOut
 @onready var version_label: Label = $Scroll/Body/Version
 
@@ -16,6 +17,10 @@ func _ready() -> void:
 	var version := str(ProjectSettings.get_setting("application/config/version", ""))
 	version_label.text = "Delta %s · problems from %s" % [version, Bank.site_commit.substr(0, 7)]
 	sign_out_button.pressed.connect(_on_sign_out)
+	judge_check_button.pressed.connect(func() -> void:
+		var app := get_tree().get_first_node_in_group("app")
+		if app:
+			app.open_judge_check())
 	sync_now_button.pressed.connect(Sync.sync_now)
 	Auth.changed.connect(_refresh)
 	Progress.changed.connect(_refresh)
