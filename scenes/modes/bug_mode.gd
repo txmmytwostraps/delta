@@ -3,6 +3,7 @@ extends VBoxContainer
 ## Tap a line to see other ways to write it, and pick one. The judge decides.
 
 signal changed
+signal instruction_changed
 
 const MENU_SIZE := 8
 
@@ -35,6 +36,12 @@ func setup(problem: Dictionary) -> bool:
 	return false
 
 
+func instruction() -> String:
+	if _open >= 0:
+		return "Pick another way to write that line, or leave it."
+	return "One line has a bug. Tap a line to change it."
+
+
 func code() -> String:
 	return "\n".join(_lines)
 
@@ -49,54 +56,20 @@ func render() -> void:
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
-	add_theme_constant_override("separation", 8)
-	var hint := Label.new()
-	hint.theme_type_variation = &"Small"
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.text = "ONE LINE HAS A BUG · TAP A LINE TO CHANGE IT"
-	add_child(hint)
+	add_theme_constant_override("separation", 16)
 	for i in _lines.size():
 		add_child(_row(i))
 		if i == _open:
 			add_child(_menu(i))
+	instruction_changed.emit()
 
 
 func _row(i: int) -> Control:
-	var panel := PanelContainer.new()
-	if i == _open:
-		panel.theme_type_variation = &"PanelActive"
-	var box := HBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
-	panel.add_child(box)
-	var line: String = _lines[i]
-	var depth := line.length() - line.lstrip("\t").length()
-	if depth > 0:
-		var guides := Label.new()
-		guides.theme_type_variation = &"Dim"
-		guides.text = "│ ".repeat(depth)
-		guides.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		box.add_child(guides)
-	var text := Label.new()
-	text.theme_type_variation = &"Accent" if line != _start[i] else &"Code"
-	text.text = line.lstrip("\t")
-	text.clip_text = true
-	text.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text.custom_minimum_size.y = 72
-	box.add_child(text)
-
-	var tap := Button.new()
-	tap.flat = true
-	tap.mouse_filter = Control.MOUSE_FILTER_PASS
-	for box_name in ["normal", "hover", "pressed", "focus"]:
-		tap.add_theme_stylebox_override(box_name, StyleBoxEmpty.new())
-	tap.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	tap.pressed.connect(func() -> void:
+	var parts := UI.code_card(_lines[i], i == _open, _lines[i] != _start[i])
+	parts.card.add_child(UI.tap_area(func() -> void:
 		_open = -1 if _open == i else i
-		render())
-	panel.add_child(tap)
-	return panel
+		render()))
+	return parts.card
 
 
 ## The replacements for line i: every one-step change, the fix among them,
@@ -121,7 +94,7 @@ func options_for(i: int) -> Array:
 
 func _menu(i: int) -> Control:
 	var menu := VBoxContainer.new()
-	menu.add_theme_constant_override("separation", 6)
+	menu.add_theme_constant_override("separation", 8)
 	var options := options_for(i)
 	if options.is_empty():
 		var none := Label.new()
@@ -129,7 +102,7 @@ func _menu(i: int) -> Control:
 		none.text = "Nothing to change on this line."
 		menu.add_child(none)
 	for option in options:
-		var button := UI.row("→ " + str(option).lstrip("\t"))
+		var button := UI.row("→ " + str(option).lstrip("\t"), "", false, true)
 		button.pressed.connect(func() -> void: _apply(i, option))
 		menu.add_child(button)
 	var leave := Button.new()

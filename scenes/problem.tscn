@@ -1,169 +1,220 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scenes/problem.gd" id="1"]
+
+[sub_resource type="ButtonGroup" id="modes"]
 
 [node name="ProblemPage" type="PanelContainer" groups=["page"]]
 theme_type_variation = &"Backdrop"
 script = ExtResource("1")
 
-[node name="Margin" type="MarginContainer" parent="."]
+[node name="Column" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="TopMargin" type="MarginContainer" parent="Column"]
 layout_mode = 2
 theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 24
+theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 0
+theme_override_constants/margin_bottom = 8
 
-[node name="Column" type="VBoxContainer" parent="Margin"]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="TopBar" type="HBoxContainer" parent="Margin/Column"]
+[node name="TopBar" type="HBoxContainer" parent="Column/TopMargin"]
 layout_mode = 2
 
-[node name="Back" type="Button" parent="Margin/Column/TopBar"]
+[node name="Back" type="Button" parent="Column/TopMargin/TopBar"]
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
 theme_type_variation = &"Link"
 text = "‹ BACK"
 
-[node name="Meta" type="Label" parent="Margin/Column/TopBar"]
+[node name="Meta" type="Label" parent="Column/TopMargin/TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"Small"
-text = "TOPIC · 01"
+text = "TOPIC"
 horizontal_alignment = 2
+vertical_alignment = 1
 clip_text = true
 text_overrun_behavior = 3
 
-[node name="Scroll" type="ScrollContainer" parent="Margin/Column"]
+[node name="Scroll" type="ScrollContainer" parent="Column"]
 layout_mode = 2
-scroll_deadzone = 24
 size_flags_vertical = 3
+scroll_deadzone = 24
 horizontal_scroll_mode = 0
 
-[node name="Body" type="VBoxContainer" parent="Margin/Column/Scroll"]
+[node name="Margin" type="MarginContainer" parent="Column/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 20
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 48
 
-[node name="Title" type="Label" parent="Margin/Column/Scroll/Body"]
+[node name="Body" type="VBoxContainer" parent="Column/Scroll/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 48
+
+[node name="Head" type="VBoxContainer" parent="Column/Scroll/Margin/Body"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Title" type="Label" parent="Column/Scroll/Margin/Body/Head"]
 layout_mode = 2
 theme_type_variation = &"Heading2"
 text = "TITLE"
-autowrap_mode = 3
+clip_text = true
+text_overrun_behavior = 3
 
-[node name="Status" type="Label" parent="Margin/Column/Scroll/Body"]
+[node name="Status" type="Label" parent="Column/Scroll/Margin/Body/Head"]
 layout_mode = 2
-theme_type_variation = &"Accent"
-autowrap_mode = 3
+theme_type_variation = &"Small"
 
-[node name="Prompt" type="Label" parent="Margin/Column/Scroll/Body"]
+[node name="Prompt" type="Label" parent="Column/Scroll/Margin/Body/Head"]
 layout_mode = 2
 text = "Prompt"
 autowrap_mode = 3
 
-[node name="ModeBar" type="HBoxContainer" parent="Margin/Column/Scroll/Body"]
+[node name="Modes" type="HBoxContainer" parent="Column/Scroll/Margin/Body"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 8
 
-[node name="ModeHost" type="VBoxContainer" parent="Margin/Column/Scroll/Body"]
+[node name="Order" type="Button" parent="Column/Scroll/Margin/Body/Modes"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+theme_type_variation = &"Segment"
+toggle_mode = true
+button_group = SubResource("modes")
+text = "ORDER"
+
+[node name="Bug" type="Button" parent="Column/Scroll/Margin/Body/Modes"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+theme_type_variation = &"Segment"
+toggle_mode = true
+button_group = SubResource("modes")
+text = "BUG"
+
+[node name="Print" type="Button" parent="Column/Scroll/Margin/Body/Modes"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+theme_type_variation = &"Segment"
+toggle_mode = true
+button_group = SubResource("modes")
+text = "PRINT"
+
+[node name="Type" type="Button" parent="Column/Scroll/Margin/Body/Modes"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+theme_type_variation = &"Segment"
+text = "TYPE"
+
+[node name="Work" type="VBoxContainer" parent="Column/Scroll/Margin/Body"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Instruction" type="PanelContainer" parent="Column/Scroll/Margin/Body/Work"]
 layout_mode = 2
 
-[node name="Preparing" type="Label" parent="Margin/Column/Scroll/Body"]
+[node name="InstructionColumn" type="VBoxContainer" parent="Column/Scroll/Margin/Body/Work/Instruction"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="InstructionText" type="Label" parent="Column/Scroll/Margin/Body/Work/Instruction/InstructionColumn"]
+layout_mode = 2
+text = "Put the lines in order."
+autowrap_mode = 3
+
+[node name="Preparing" type="Label" parent="Column/Scroll/Margin/Body/Work"]
 visible = false
 layout_mode = 2
 theme_type_variation = &"Muted"
 text = "Preparing…"
 
-[node name="Actions" type="HBoxContainer" parent="Margin/Column/Scroll/Body"]
+[node name="ModeHost" type="VBoxContainer" parent="Column/Scroll/Margin/Body/Work"]
 layout_mode = 2
-theme_override_constants/separation = 12
 
-[node name="Run" type="Button" parent="Margin/Column/Scroll/Body/Actions"]
-custom_minimum_size = Vector2(0, 88)
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 1
-theme_type_variation = &"Primary"
-text = "RUN"
-
-[node name="Reset" type="Button" parent="Margin/Column/Scroll/Body/Actions"]
-custom_minimum_size = Vector2(0, 88)
-layout_mode = 2
-mouse_filter = 1
-text = "RESET"
-
-[node name="Results" type="VBoxContainer" parent="Margin/Column/Scroll/Body"]
+[node name="NotesDrawer" type="PanelContainer" parent="Column"]
 visible = false
 layout_mode = 2
-theme_override_constants/separation = 12
 
-[node name="Verdict" type="Label" parent="Margin/Column/Scroll/Body/Results"]
-layout_mode = 2
-theme_type_variation = &"Heading3"
-autowrap_mode = 3
-
-[node name="Count" type="Label" parent="Margin/Column/Scroll/Body/Results"]
-layout_mode = 2
-theme_type_variation = &"Small"
-
-[node name="VerdictNote" type="Label" parent="Margin/Column/Scroll/Body/Results"]
-layout_mode = 2
-theme_type_variation = &"Muted"
-autowrap_mode = 3
-
-[node name="Tests" type="VBoxContainer" parent="Margin/Column/Scroll/Body/Results"]
+[node name="NotesColumn" type="VBoxContainer" parent="Column/NotesDrawer"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="OutputLabel" type="Label" parent="Margin/Column/Scroll/Body/Results"]
+[node name="NotesLabel" type="Label" parent="Column/NotesDrawer/NotesColumn"]
 layout_mode = 2
 theme_type_variation = &"Small"
-text = "OUTPUT"
+text = "NOTE · WHAT I DON'T GET"
 
-[node name="Output" type="Label" parent="Margin/Column/Scroll/Body/Results"]
-layout_mode = 2
-theme_type_variation = &"Code"
-autowrap_mode = 3
-
-[node name="ErrorsLabel" type="Label" parent="Margin/Column/Scroll/Body/Results"]
-layout_mode = 2
-theme_type_variation = &"Small"
-text = "ERRORS"
-
-[node name="Errors" type="Label" parent="Margin/Column/Scroll/Body/Results"]
-layout_mode = 2
-theme_type_variation = &"Error"
-autowrap_mode = 3
-
-[node name="NoteLabel" type="Label" parent="Margin/Column/Scroll/Body"]
-layout_mode = 2
-theme_type_variation = &"Small"
-text = "NOTES · WHAT I DON'T GET"
-
-[node name="Note" type="TextEdit" parent="Margin/Column/Scroll/Body"]
-custom_minimum_size = Vector2(0, 240)
+[node name="Note" type="TextEdit" parent="Column/NotesDrawer/NotesColumn"]
+custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 placeholder_text = "What I don't get, or what I missed."
 wrap_mode = 1
 scroll_fit_content_height = true
 
-[node name="NoteRow" type="HBoxContainer" parent="Margin/Column/Scroll/Body"]
+[node name="NoteRow" type="HBoxContainer" parent="Column/NotesDrawer/NotesColumn"]
 layout_mode = 2
 
-[node name="Resolved" type="Button" parent="Margin/Column/Scroll/Body/NoteRow"]
+[node name="Resolved" type="Button" parent="Column/NotesDrawer/NotesColumn/NoteRow"]
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
-mouse_filter = 1
 theme_type_variation = &"Link"
 toggle_mode = true
 text = "[ ] RESOLVED"
 
-[node name="Saved" type="Label" parent="Margin/Column/Scroll/Body/NoteRow"]
+[node name="Saved" type="Label" parent="Column/NotesDrawer/NotesColumn/NoteRow"]
 layout_mode = 2
-size_flags_horizontal = 10
+size_flags_horizontal = 3
 theme_type_variation = &"Dim"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Bottom" type="Control" parent="Margin/Column/Scroll/Body"]
-custom_minimum_size = Vector2(0, 24)
+[node name="CloseNote" type="Button" parent="Column/NotesDrawer/NotesColumn/NoteRow"]
+custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
+theme_type_variation = &"Link"
+text = "DONE"
+
+[node name="Bar" type="PanelContainer" parent="Column"]
+layout_mode = 2
+theme_type_variation = &"BottomBar"
+
+[node name="BarMargin" type="MarginContainer" parent="Column/Bar"]
+layout_mode = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 16
+
+[node name="Actions" type="HBoxContainer" parent="Column/Bar/BarMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Run" type="Button" parent="Column/Bar/BarMargin/Actions"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"Primary"
+text = "RUN"
+
+[node name="Reset" type="Button" parent="Column/Bar/BarMargin/Actions"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+text = "RESET"
+
+[node name="NoteButton" type="Button" parent="Column/Bar/BarMargin/Actions"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+theme_type_variation = &"Link"
+text = "NOTE"

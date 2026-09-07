@@ -3,10 +3,17 @@ extends VBoxContainer
 ## and problem pages opened on top of them.
 
 const ProblemScene := preload("res://scenes/problem.tscn")
+const EditorScene := preload("res://scenes/editor.tscn")
 const JudgeCheckScene := preload("res://scenes/judge_check.tscn")
+const FlashcardsScene := preload("res://scenes/flashcards.tscn")
 
 @onready var screens: MarginContainer = $Screens
+@onready var tab_bar: PanelContainer = $TabBar
 @onready var tabs: HBoxContainer = $TabBar/Tabs
+
+## Per problem, what one visit remembers across its pages and runs:
+## misses so far, and whether a review's verdict was decided.
+var _visits: Dictionary = {}
 
 
 var _clock := 0.0
@@ -39,6 +46,42 @@ func open_problem(id: String, review: bool = false) -> void:
 	var page := ProblemScene.instantiate()
 	page.problem_id = id
 	page.review = review
+	page.visit = visit_for(id, review)
+	screens.add_child(page)
+
+
+## The typed editor for a problem, in landscape, over everything.
+func open_editor(id: String, review: bool = false) -> void:
+	close_pages()
+	var page := EditorScene.instantiate()
+	page.problem_id = id
+	page.review = review
+	page.visit = visit_for(id, review)
+	screens.add_child(page)
+
+
+func visit_for(id: String, review: bool) -> Dictionary:
+	if not _visits.has(id):
+		_visits[id] = {"review": review, "review_recorded": false, "attempt_fails": 0}
+	return _visits[id]
+
+
+## Turns the phone sideways for the editor and back for everything else.
+func set_landscape(on: bool) -> void:
+	get_window().content_scale_size = Vector2i(1280, 720) if on else Vector2i(720, 1280)
+	if OS.has_feature("mobile"):
+		DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_LANDSCAPE if on else DisplayServer.SCREEN_PORTRAIT)
+	elif OS.has_feature("pc"):
+		DisplayServer.window_set_size(Vector2i(640, 360) if on else Vector2i(360, 640))
+	tab_bar.visible = not on
+
+
+## Flashcards: today's card review, or one lesson's cards to flip through.
+func open_flashcards(review: bool, lesson: int) -> void:
+	close_pages()
+	var page := FlashcardsScene.instantiate()
+	page.review = review
+	page.lesson = lesson
 	screens.add_child(page)
 
 
@@ -66,4 +109,6 @@ func show_tab(tab_name: String) -> void:
 func _show_screen(screen_name: String) -> void:
 	close_pages()
 	for screen: Control in screens.get_children():
+		if screen.is_in_group("page"):
+			continue
 		screen.visible = screen.name == screen_name

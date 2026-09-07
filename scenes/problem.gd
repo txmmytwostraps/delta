@@ -1,57 +1,67 @@
 extends PanelContainer
 ## One problem, in one of the tap modes: put the lines in order, fix the
-## bug, or say what it prints. Run sends the assembled code to the judge;
-## the results panel and the note are below. Opened by App.open_problem();
-## Back closes it.
+## bug, or say what it prints; or typed, in the editor. The instruction area
+## above the cards says what to do and, after a run, shows the result. Run,
+## Reset and the note live in the bar at the bottom. Opened by
+## App.open_problem(); Back closes it.
 
 const OrderMode := preload("res://scenes/modes/order_mode.gd")
 const BugMode := preload("res://scenes/modes/bug_mode.gd")
 const PrintMode := preload("res://scenes/modes/print_mode.gd")
 const MODES := ["order", "bug", "print"]
-const MODE_LABELS := {"order": "ORDER", "bug": "BUG", "print": "PRINT"}
 
 var problem_id := ""
 ## Opened from the review slot: the first verdict decides the review.
 var review := false
+## Shared with the editor: misses this visit, whether the review was decided.
+var visit: Dictionary = {}
 
-@onready var back: Button = $Margin/Column/TopBar/Back
-@onready var meta: Label = $Margin/Column/TopBar/Meta
-@onready var title: Label = $Margin/Column/Scroll/Body/Title
-@onready var status: Label = $Margin/Column/Scroll/Body/Status
-@onready var prompt: Label = $Margin/Column/Scroll/Body/Prompt
-@onready var mode_bar: HBoxContainer = $Margin/Column/Scroll/Body/ModeBar
-@onready var mode_host: VBoxContainer = $Margin/Column/Scroll/Body/ModeHost
-@onready var preparing: Label = $Margin/Column/Scroll/Body/Preparing
-@onready var actions: HBoxContainer = $Margin/Column/Scroll/Body/Actions
-@onready var run_button: Button = $Margin/Column/Scroll/Body/Actions/Run
-@onready var reset_button: Button = $Margin/Column/Scroll/Body/Actions/Reset
-@onready var results: VBoxContainer = $Margin/Column/Scroll/Body/Results
-@onready var verdict: Label = $Margin/Column/Scroll/Body/Results/Verdict
-@onready var count: Label = $Margin/Column/Scroll/Body/Results/Count
-@onready var verdict_note: Label = $Margin/Column/Scroll/Body/Results/VerdictNote
-@onready var tests: VBoxContainer = $Margin/Column/Scroll/Body/Results/Tests
-@onready var output_label: Label = $Margin/Column/Scroll/Body/Results/OutputLabel
-@onready var output: Label = $Margin/Column/Scroll/Body/Results/Output
-@onready var errors_label: Label = $Margin/Column/Scroll/Body/Results/ErrorsLabel
-@onready var errors: Label = $Margin/Column/Scroll/Body/Results/Errors
-@onready var note: TextEdit = $Margin/Column/Scroll/Body/Note
-@onready var resolved: Button = $Margin/Column/Scroll/Body/NoteRow/Resolved
-@onready var saved: Label = $Margin/Column/Scroll/Body/NoteRow/Saved
+@onready var back: Button = $Column/TopMargin/TopBar/Back
+@onready var meta: Label = $Column/TopMargin/TopBar/Meta
+@onready var scroll: ScrollContainer = $Column/Scroll
+@onready var title: Label = $Column/Scroll/Margin/Body/Head/Title
+@onready var status: Label = $Column/Scroll/Margin/Body/Head/Status
+@onready var prompt: Label = $Column/Scroll/Margin/Body/Head/Prompt
+@onready var segments: HBoxContainer = $Column/Scroll/Margin/Body/Modes
+@onready var instruction_box: PanelContainer = $Column/Scroll/Margin/Body/Work/Instruction
+@onready var instruction_column: VBoxContainer = $Column/Scroll/Margin/Body/Work/Instruction/InstructionColumn
+@onready var instruction_text: Label = $Column/Scroll/Margin/Body/Work/Instruction/InstructionColumn/InstructionText
+@onready var preparing: Label = $Column/Scroll/Margin/Body/Work/Preparing
+@onready var mode_host: VBoxContainer = $Column/Scroll/Margin/Body/Work/ModeHost
+@onready var notes_drawer: PanelContainer = $Column/NotesDrawer
+@onready var note: TextEdit = $Column/NotesDrawer/NotesColumn/Note
+@onready var resolved: Button = $Column/NotesDrawer/NotesColumn/NoteRow/Resolved
+@onready var saved: Label = $Column/NotesDrawer/NotesColumn/NoteRow/Saved
+@onready var close_note: Button = $Column/NotesDrawer/NotesColumn/NoteRow/CloseNote
+@onready var run_button: Button = $Column/Bar/BarMargin/Actions/Run
+@onready var reset_button: Button = $Column/Bar/BarMargin/Actions/Reset
+@onready var note_button: Button = $Column/Bar/BarMargin/Actions/NoteButton
 
 var mode := ""
+var results := ResultsPanel.new()
 var _widget: Control
 var _save_timer: Timer
 var _loading := true
-## What Submission needs to remember across the runs of this visit.
-var _visit := {}
 var _switching := 0
 
 
 func _ready() -> void:
-	_visit = {"review": review, "review_recorded": false, "attempt_fails": 0}
+	if visit.is_empty():
+		visit = {"review": review, "review_recorded": false, "attempt_fails": 0}
+	instruction_column.add_child(results)
+	results.clear()
 	back.pressed.connect(close)
 	run_button.pressed.connect(_on_run)
 	reset_button.pressed.connect(_on_reset)
+	note_button.pressed.connect(_toggle_notes)
+	close_note.pressed.connect(_toggle_notes)
+	for m in MODES:
+		var button: Button = segments.get_node(m.capitalize())
+		button.pressed.connect(func() -> void:
+			if mode != m:
+				set_mode(m))
+	segments.get_node("Type").pressed.connect(_open_editor)
+
 	_save_timer = Timer.new()
 	_save_timer.one_shot = true
 	_save_timer.wait_time = 1.0
@@ -76,7 +86,7 @@ func render() -> void:
 		title.text = "UNKNOWN PROBLEM"
 		return
 	_loading = true
-	meta.text = "%s · D%d%s" % [Bank.topic_title(p.concept).to_upper(), int(p.get("difficulty", 0)), " · REVIEW" if review else ""]
+	meta.text = Bank.topic_title(p.concept).to_upper() + (" · REVIEW" if review else "")
 	title.text = str(p.title).to_upper()
 	prompt.text = str(p.prompt)
 	_render_status()
@@ -84,6 +94,7 @@ func render() -> void:
 	note.text = str(n.get("text", ""))
 	resolved.button_pressed = bool(n.get("resolved", false))
 	resolved.text = "[x] RESOLVED" if resolved.button_pressed else "[ ] RESOLVED"
+	note_button.text = "NOTE ·" if str(n.get("text", "")).strip_edges() != "" else "NOTE"
 	_update_saved()
 	_loading = false
 
@@ -116,12 +127,14 @@ func set_mode(name: String) -> void:
 	mode = name
 	_switching += 1
 	var token := _switching
-	_render_mode_bar()
-	_clear_results()
+	segments.get_node(name.capitalize()).button_pressed = true
+	results.clear()
+	instruction_text.visible = true
+	instruction_text.text = "Preparing…"
 	_clear(mode_host)
 	_widget = null
-	preparing.visible = name != "order"
-	actions.visible = false
+	preparing.visible = false
+	run_button.disabled = true
 
 	# The widget joins the tree before its setup, hidden, so the setup can
 	# tell when the page went away while it was waiting on the judge.
@@ -135,6 +148,9 @@ func set_mode(name: String) -> void:
 			widget = PrintMode.new()
 	widget.visible = false
 	mode_host.add_child(widget)
+	widget.instruction_changed.connect(func() -> void:
+		if _widget == widget and not results.visible:
+			instruction_text.text = widget.instruction())
 	var ok := true
 	if name == "order":
 		widget.setup(p)
@@ -144,55 +160,26 @@ func set_mode(name: String) -> void:
 		if is_instance_valid(widget):
 			widget.queue_free()
 		return
-	preparing.visible = false
 	if not ok:
 		widget.queue_free()
 		if name != "order":
-			set_mode("order")
-			_show_note_only("[!] No %s version of this problem" % ("bug" if name == "bug" else "print"), "Showing it as lines to order instead.")
+			await set_mode("order")
+			results.show_note("[!] No %s version of this problem" % ("bug" if name == "bug" else "print"), "Showing it as lines to order instead.")
+			instruction_text.visible = false
 		return
 	_widget = widget
 	widget.visible = true
+	instruction_text.text = widget.instruction()
 	if widget.has_signal("answered"):
 		widget.answered.connect(_on_answered)
-	actions.visible = true
 	run_button.visible = name != "print"
-	reset_button.visible = true
+	run_button.disabled = false
 
 
-func _render_mode_bar() -> void:
-	_clear(mode_bar)
-	var label := Label.new()
-	label.theme_type_variation = &"Small"
-	label.text = "TRY AS"
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	mode_bar.add_child(label)
-	for m in MODES:
-		if m == mode:
-			var active := Label.new()
-			active.theme_type_variation = &"Accent"
-			active.text = MODE_LABELS[m]
-			active.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			active.custom_minimum_size = Vector2(0, 88)
-			active.add_theme_constant_override("outline_size", 0)
-			var pad := MarginContainer.new()
-			pad.add_theme_constant_override("margin_left", 8)
-			pad.add_theme_constant_override("margin_right", 8)
-			pad.add_child(active)
-			mode_bar.add_child(pad)
-		else:
-			var button := Button.new()
-			button.theme_type_variation = &"Link"
-			button.custom_minimum_size = Vector2(0, 88)
-			button.mouse_filter = Control.MOUSE_FILTER_PASS
-			button.text = MODE_LABELS[m]
-			button.pressed.connect(func() -> void: set_mode(m))
-			mode_bar.add_child(button)
-	var typed := Label.new()
-	typed.theme_type_variation = &"Dim"
-	typed.text = "TYPE · SOON"
-	typed.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	mode_bar.add_child(typed)
+func _open_editor() -> void:
+	var app := get_tree().get_first_node_in_group("app")
+	if app:
+		app.open_editor(problem_id, review)
 
 
 ## The code the current mode has assembled.
@@ -206,7 +193,10 @@ func current_code() -> String:
 func _on_reset() -> void:
 	if _widget and _widget.has_method("reset"):
 		_widget.reset()
-	_clear_results()
+	results.clear()
+	instruction_text.visible = true
+	if _widget:
+		instruction_text.text = _widget.instruction()
 
 
 # ---- running ----
@@ -216,16 +206,14 @@ func _on_run() -> void:
 	if p.is_empty() or Grader.busy:
 		return
 	run_button.disabled = true
-	_clear_results()
-	results.visible = true
-	verdict.theme_type_variation = &"Muted"
-	verdict.text = "Running…"
-
+	instruction_text.visible = false
+	results.show_running()
+	scroll.scroll_vertical = 0
 	var reply: Dictionary = await Grader.run(current_code(), p)
 	if not is_inside_tree():
 		return
-	var outcome := Submission.record(p, reply, _visit)
-	_render_result(p, reply, outcome, true)
+	var outcome := Submission.record(p, reply, visit)
+	results.show_result(p, reply, outcome, true)
 	_render_status()
 	run_button.disabled = false
 
@@ -233,139 +221,28 @@ func _on_run() -> void:
 ## A pick in the print mode: recorded like a run, shown without test rows.
 func _on_answered(correct: bool, reply: Dictionary) -> void:
 	var p := Bank.problem(problem_id)
-	var outcome := Submission.record(p, reply, _visit)
+	var outcome := Submission.record(p, reply, visit)
 	if outcome.verdict.begins_with("[x] All tests pass"):
 		outcome.verdict = "[x] Right · solved"
 	elif outcome.verdict.begins_with("[x] Not yet"):
 		outcome.verdict = "[x] Not that one · " + Submission.miss_text(problem_id)
-	_clear_results()
-	results.visible = true
-	_render_result(p, reply, outcome, false)
-	if not correct:
-		verdict_note.visible = true
-		verdict_note.text = "The right answer is marked. Reset to try again." if outcome.note == "" else outcome.note
+	if not correct and outcome.note == "":
+		outcome.note = "The right answer is marked. Reset to try again."
+	instruction_text.visible = false
+	results.show_result(p, reply, outcome, false)
+	scroll.scroll_vertical = 0
 	_render_status()
 
 
-func _clear_results() -> void:
-	results.visible = false
-	count.text = ""
-	verdict_note.text = ""
-	verdict_note.visible = false
-	_clear(tests)
-	output_label.visible = false
-	output.visible = false
-	errors_label.visible = false
-	errors.visible = false
-
-
-func _show_note_only(text: String, detail: String) -> void:
-	results.visible = true
-	verdict.theme_type_variation = &"Amber"
-	verdict.text = text
-	verdict_note.visible = true
-	verdict_note.text = detail
-
-
-func _render_result(p: Dictionary, reply: Dictionary, outcome: Dictionary, with_rows: bool) -> void:
-	var result: Dictionary = reply.result
-	verdict.theme_type_variation = &"Accent" if outcome.pass else &"Error"
-	verdict.text = outcome.verdict
-	verdict_note.text = outcome.note
-	verdict_note.visible = outcome.note != ""
-	var total: int = p.get("tests", []).size()
-
-	if result.status != "ok":
-		count.text = "0 / %d TESTS · %d MS" % [total, reply.ms]
-		_show_errors(reply.errors, "Parse error" if result.status == "compile_error" else "")
-		return
-
-	count.text = "%d / %d TESTS · %d MS" % [int(result.passed), int(result.total), reply.ms]
-	if not with_rows:
-		return
-	var rtype := Fmt.return_type(str(p.get("signature", "")))
-	var print_only := Fmt.print_only(p)
-	var printed := []
-	for i in result.results.size():
-		var r: Dictionary = result.results[i]
-		var t: Dictionary = p.tests[i] if i < p.tests.size() else {}
-		tests.add_child(_test_row(p, t, r, rtype, print_only))
-		for line in r.get("out", []):
-			printed.append("[test %d] %s" % [i + 1, line])
-	if printed.size() > 0 and not print_only:
-		output_label.visible = true
-		output.visible = true
-		output.text = "\n".join(printed)
-	_show_errors(reply.errors, "")
-
-
-func _test_row(p: Dictionary, t: Dictionary, r: Dictionary, rtype: String, print_only: bool) -> Control:
-	var panel := PanelContainer.new()
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
-	panel.add_child(column)
-
-	var head := Label.new()
-	head.theme_type_variation = &"Accent" if r.pass else &"Error"
-	head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var frames: String = "after %d frame%s · " % [int(t.frames), "" if int(t.frames) == 1 else "s"] if t.has("frames") else ""
-	head.text = "%s %s%s%s" % ["✓" if r.pass else "✗", (str(t.name) + " · ") if t.has("name") else "", frames, Fmt.call_str(p, r.get("args", []))]
-	column.add_child(head)
-
-	var expected := Label.new()
-	expected.theme_type_variation = &"Muted"
-	expected.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
-	expected.text = ("expected output: " if print_only else "expected: ") + _expected_text(t, rtype, print_only)
-	column.add_child(expected)
-
-	var got := Label.new()
-	got.theme_type_variation = &"Code"
-	got.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
-	got.text = ("your output: " if print_only else "yours: ") + _got_text(t, r, rtype, print_only)
-	if r.has("error"):
-		got.text += "\n" + str(r.error)
-	column.add_child(got)
-	return panel
-
-
-func _expected_text(t: Dictionary, rtype: String, print_only: bool) -> String:
-	if print_only:
-		return _lines(t.get("out", []), "(nothing printed)")
-	var text := Fmt.fmt_typed(t.get("expect", null), rtype)
-	if t.has("out"):
-		text += "\nprints " + _lines(t.out, "nothing")
-	return text
-
-
-func _got_text(t: Dictionary, r: Dictionary, rtype: String, print_only: bool) -> String:
-	var out: Array = r.get("out", [])
-	if print_only:
-		return _lines(out, "(nothing printed)")
-	var text := Fmt.fmt_typed(r.get("got", null), rtype)
-	if t.has("out"):
-		text += "\nprints " + _lines(out, "nothing")
-	return text
-
-
-func _lines(lines: Array, when_empty: String) -> String:
-	if lines.is_empty():
-		return when_empty
-	var strings := []
-	for line in lines:
-		strings.append(str(line))
-	return "\n".join(strings)
-
-
-func _show_errors(lines: Array, fallback: String) -> void:
-	var text := "\n".join(lines)
-	if text == "":
-		text = fallback
-	errors_label.visible = text != ""
-	errors.visible = text != ""
-	errors.text = text
-
-
 # ---- notes ----
+
+func _toggle_notes() -> void:
+	notes_drawer.visible = not notes_drawer.visible
+	if notes_drawer.visible:
+		note.grab_focus()
+	elif _save_timer.time_left > 0:
+		_save_note()
+
 
 func _save_note() -> void:
 	_save_timer.stop()
@@ -379,6 +256,7 @@ func _save_note() -> void:
 		_update_saved()
 		return
 	Notes.save(problem_id, {"text": text, "resolved": is_resolved})
+	note_button.text = "NOTE ·" if text.strip_edges() != "" else "NOTE"
 	_update_saved()
 
 

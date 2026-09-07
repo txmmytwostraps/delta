@@ -47,6 +47,7 @@ func _init() -> void:
 	_label(theme, "Heading", head, 72, TEXT)
 	_label(theme, "Heading2", head, 48, TEXT)
 	_label(theme, "Heading3", head_medium, 36, TEXT)
+	_label(theme, "RowTitle", head_medium, 30, TEXT)
 	_label(theme, "Big", head, 128, ACCENT)
 	_label(theme, "Eyebrow", spaced, 24, ACCENT)
 	_label(theme, "Small", spaced, 24, MUTED)
@@ -132,6 +133,25 @@ func _init() -> void:
 	theme.set_color("caret_color", "TextEdit", ACCENT)
 	theme.set_color("selection_color", "TextEdit", Color(ACCENT, 0.3))
 	theme.set_color("background_color", "TextEdit", BG)
+
+	# Segmented control: equal boxes, the active one filled.
+	theme.set_type_variation("Segment", "Button")
+	_font_of(theme, "Segment", _spaced(mono_medium, 2), 24)
+	theme.set_stylebox("normal", "Segment", _box(CLEAR, LINE_STRONG, 2, 16, 24))
+	theme.set_stylebox("hover", "Segment", _box(CLEAR, LINE_STRONG, 2, 16, 24))
+	theme.set_stylebox("pressed", "Segment", _box(ACCENT, ACCENT, 2, 16, 24))
+	theme.set_stylebox("disabled", "Segment", _box(CLEAR, LINE, 2, 16, 24))
+	theme.set_stylebox("focus", "Segment", StyleBoxEmpty.new())
+	theme.set_color("font_color", "Segment", MUTED)
+	theme.set_color("font_hover_color", "Segment", TEXT)
+	theme.set_color("font_pressed_color", "Segment", BG)
+	theme.set_color("font_hover_pressed_color", "Segment", BG)
+	theme.set_color("font_focus_color", "Segment", MUTED)
+	theme.set_color("font_disabled_color", "Segment", DIM)
+
+	# Detail lines under a check: body font, one step smaller.
+	_label(theme, "Detail", mono, 26, MUTED)
+	_label(theme, "DetailCode", mono, 26, TEXT)
 
 	# ---- text fields ----
 	_font_of(theme, "LineEdit", mono, 28)
