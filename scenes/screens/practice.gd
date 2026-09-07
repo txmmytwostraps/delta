@@ -45,12 +45,8 @@ func _render_topics() -> void:
 	for t in Progress.route_topics():
 		if t.total == 0:
 			continue
-		var button := Button.new()
-		button.theme_type_variation = &"Row"
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.custom_minimum_size.y = 88
-		var right: String = "locked · L%d" % int(t.lesson) if t.locked else "%d/%d" % [t.done, t.total]
-		button.text = "%s L%02d %s   %s" % [Progress.marker_for(t), int(t.lesson), t.title, right]
+		var right: String = "locked" if t.locked else "%d/%d" % [t.done, t.total]
+		var button := UI.row("%s L%02d %s" % [Progress.marker_for(t), int(t.lesson), t.title], right, t.locked)
 		if t.locked:
 			button.disabled = true
 		button.pressed.connect(func() -> void: show_topic(t.concept))
@@ -65,11 +61,7 @@ func _render_topic() -> void:
 	var i := 0
 	for p in t.list:
 		i += 1
-		var button := Button.new()
-		button.theme_type_variation = &"Row"
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.custom_minimum_size.y = 88
-		button.text = "%s %02d %s" % ["[x]" if Progress.is_solved(p.id) else "[ ]", i, p.title]
+		var button := UI.row("%s %02d %s" % ["[x]" if Progress.is_solved(p.id) else "[ ]", i, p.title])
 		button.pressed.connect(func() -> void:
 			var app := get_tree().get_first_node_in_group("app")
 			if app:

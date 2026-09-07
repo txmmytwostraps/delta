@@ -12,6 +12,7 @@ script = ExtResource("2")
 
 [node name="Scroll" type="ScrollContainer" parent="."]
 layout_mode = 2
+scroll_deadzone = 24
 horizontal_scroll_mode = 0
 
 [node name="Body" type="VBoxContainer" parent="Scroll"]
@@ -36,6 +37,7 @@ theme_override_constants/separation = 16
 [node name="Back" type="Button" parent="Scroll/Body/TopicView"]
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
+mouse_filter = 1
 size_flags_horizontal = 0
 theme_type_variation = &"Link"
 text = "‹ ALL TOPICS"

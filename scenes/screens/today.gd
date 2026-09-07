@@ -109,21 +109,22 @@ func _slot(slot: Dictionary, active: bool) -> Control:
 		state.text = "%d / %d" % [slot.progress[0], slot.progress[1]]
 	row.add_child(state)
 
+	# A tap on the slot opens its first problem; a drag still scrolls.
 	if not slot.done and slot.get("first_id", null) != null:
-		panel.mouse_filter = Control.MOUSE_FILTER_STOP
-		panel.gui_input.connect(func(event: InputEvent) -> void:
-			if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-				_open(slot.first_id))
+		var tap := Button.new()
+		tap.flat = true
+		tap.mouse_filter = Control.MOUSE_FILTER_PASS
+		tap.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		for box_name in ["normal", "hover", "pressed", "focus"]:
+			tap.add_theme_stylebox_override(box_name, StyleBoxEmpty.new())
+		tap.pressed.connect(func() -> void: _open(slot.first_id))
+		panel.add_child(tap)
 	return panel
 
 
 func _problem_row(id: String, prefix := "") -> Button:
 	var p := Bank.problem(id)
-	var button := Button.new()
-	button.theme_type_variation = &"Row"
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.custom_minimum_size.y = 88
-	button.text = "%s %s%s" % ["[x]" if Progress.is_solved(id) else "[ ]", prefix, p.get("title", id)]
+	var button := UI.row("%s %s%s" % ["[x]" if Progress.is_solved(id) else "[ ]", prefix, p.get("title", id)])
 	button.pressed.connect(func() -> void: _open(id))
 	return button
 
@@ -131,6 +132,7 @@ func _problem_row(id: String, prefix := "") -> Button:
 func _action(text: String, id: String) -> Button:
 	var button := Button.new()
 	button.custom_minimum_size.y = 88
+	button.mouse_filter = Control.MOUSE_FILTER_PASS
 	button.text = text
 	button.pressed.connect(func() -> void: _open(id))
 	return button

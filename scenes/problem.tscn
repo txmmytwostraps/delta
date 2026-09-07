@@ -31,9 +31,13 @@ layout_mode = 2
 size_flags_horizontal = 10
 theme_type_variation = &"Small"
 text = "TOPIC · 01"
+horizontal_alignment = 2
+clip_text = true
+text_overrun_behavior = 3
 
 [node name="Scroll" type="ScrollContainer" parent="Margin/Column"]
 layout_mode = 2
+scroll_deadzone = 24
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
@@ -99,6 +103,7 @@ layout_mode = 2
 [node name="Resolved" type="Button" parent="Margin/Column/Scroll/Body/NoteRow"]
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
+mouse_filter = 1
 theme_type_variation = &"Link"
 toggle_mode = true
 text = "[ ] RESOLVED"

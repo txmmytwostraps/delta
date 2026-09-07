@@ -12,6 +12,7 @@ script = ExtResource("2")
 
 [node name="Scroll" type="ScrollContainer" parent="."]
 layout_mode = 2
+scroll_deadzone = 24
 horizontal_scroll_mode = 0
 
 [node name="Body" type="VBoxContainer" parent="Scroll"]
@@ -91,11 +92,13 @@ autowrap_mode = 3
 [node name="SyncNow" type="Button" parent="Scroll/Body/Sync/Column"]
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
+mouse_filter = 1
 text = "SYNC NOW"
 
 [node name="SignOut" type="Button" parent="Scroll/Body"]
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
+mouse_filter = 1
 text = "SIGN OUT"
 
 [node name="Version" type="Label" parent="Scroll/Body"]

@@ -12,6 +12,7 @@ script = ExtResource("2")
 
 [node name="Scroll" type="ScrollContainer" parent="."]
 layout_mode = 2
+scroll_deadzone = 24
 horizontal_scroll_mode = 0
 
 [node name="Body" type="VBoxContainer" parent="Scroll"]
