@@ -70,6 +70,29 @@ layout_mode = 2
 theme_type_variation = &"Muted"
 autowrap_mode = 3
 
+[node name="Sync" type="PanelContainer" parent="Scroll/Body"]
+layout_mode = 2
+
+[node name="Column" type="VBoxContainer" parent="Scroll/Body/Sync"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Label" type="Label" parent="Scroll/Body/Sync/Column"]
+layout_mode = 2
+theme_type_variation = &"Small"
+text = "ACCOUNT SYNC"
+
+[node name="Status" type="Label" parent="Scroll/Body/Sync/Column"]
+layout_mode = 2
+theme_type_variation = &"Muted"
+text = "…"
+autowrap_mode = 3
+
+[node name="SyncNow" type="Button" parent="Scroll/Body/Sync/Column"]
+custom_minimum_size = Vector2(0, 88)
+layout_mode = 2
+text = "SYNC NOW"
+
 [node name="SignOut" type="Button" parent="Scroll/Body"]
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2

@@ -10,3 +10,6 @@ build/
 # Local notes and source artwork
 delta-app-plan.md
 delta-logo/
+
+# The problem bank and route, pulled from the site repo by tools/fetch-site.sh
+bank/

@@ -17,6 +17,12 @@ config/icon="res://icon.png"
 
 Supabase="*res://scripts/supabase.gd"
 Auth="*res://scripts/auth.gd"
+Store="*res://scripts/store.gd"
+Bank="*res://scripts/bank.gd"
+Progress="*res://scripts/progress.gd"
+Reviews="*res://scripts/reviews.gd"
+Notes="*res://scripts/notes.gd"
+Sync="*res://scripts/sync.gd"
 
 [display]
 

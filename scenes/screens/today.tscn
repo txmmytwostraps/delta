@@ -1,12 +1,14 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/screens/screen_header.tscn" id="1"]
+[ext_resource type="Script" path="res://scenes/screens/today.gd" id="2"]
 
 [node name="Today" type="MarginContainer"]
 theme_override_constants/margin_left = 40
 theme_override_constants/margin_top = 48
 theme_override_constants/margin_right = 40
 theme_override_constants/margin_bottom = 0
+script = ExtResource("2")
 
 [node name="Scroll" type="ScrollContainer" parent="."]
 layout_mode = 2
@@ -15,15 +17,51 @@ horizontal_scroll_mode = 0
 [node name="Body" type="VBoxContainer" parent="Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 28
+theme_override_constants/separation = 24
 
 [node name="Header" parent="Scroll/Body" instance=ExtResource("1")]
 layout_mode = 2
 eyebrow = "Daily run"
 title = "Today"
 
-[node name="Placeholder" type="Label" parent="Scroll/Body"]
+[node name="Dateline" type="Label" parent="Scroll/Body"]
 layout_mode = 2
-theme_type_variation = &"Dim"
-text = "Your run for the day will appear here."
+theme_type_variation = &"Small"
+text = "// SATURDAY 09.06"
+
+[node name="Count" type="Label" parent="Scroll/Body"]
+layout_mode = 2
+theme_type_variation = &"Muted"
+text = "0 / 3"
+
+[node name="Slots" type="VBoxContainer" parent="Scroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="DoneDay" type="Label" parent="Scroll/Body"]
+layout_mode = 2
+theme_type_variation = &"Accent"
+text = "Day done. Anything more is extra."
 autowrap_mode = 3
+
+[node name="NewLabel" type="Label" parent="Scroll/Body"]
+layout_mode = 2
+theme_type_variation = &"Small"
+text = "TODAY'S NEW PROBLEMS"
+
+[node name="NewList" type="VBoxContainer" parent="Scroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="KeepLabel" type="Label" parent="Scroll/Body"]
+layout_mode = 2
+theme_type_variation = &"Small"
+text = "KEEP GOING"
+
+[node name="Keep" type="VBoxContainer" parent="Scroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Bottom" type="Control" parent="Scroll/Body"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2

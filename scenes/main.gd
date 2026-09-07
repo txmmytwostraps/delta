@@ -5,6 +5,7 @@ extends Control
 ## For checking the look without a phone, the app can save a picture of
 ## itself and quit:
 ##   godot --path . -- --screenshot=shot.png --tab=profile
+##   godot --path . -- --screenshot=shot.png --problem=arith-001
 
 const SignInScene := preload("res://scenes/sign_in.tscn")
 const AppScene := preload("res://scenes/app.tscn")
@@ -41,6 +42,8 @@ func _maybe_screenshot() -> void:
 		return
 	if args.has("tab") and _shown.has_method("show_tab"):
 		_shown.show_tab(args.tab)
+	if args.has("problem") and _shown.has_method("open_problem"):
+		_shown.open_problem(args.problem)
 	await get_tree().create_timer(1.0).timeout
 	var image := get_viewport().get_texture().get_image()
 	var err := image.save_png(args.screenshot)

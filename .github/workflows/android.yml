@@ -94,6 +94,9 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
 
+      - name: Pull the problem bank from the site repo
+        run: bash tools/fetch-site.sh
+
       - name: Import the project
         run: ~/godot/godot --headless --path . --import --quit || true
 

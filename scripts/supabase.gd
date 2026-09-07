@@ -13,6 +13,10 @@ const METHODS := {
 	"DELETE": HTTPClient.METHOD_DELETE,
 }
 
+## Where requests go. Only tests change it (to an address that does not
+## answer, to act out being offline).
+var base_url: String = AppConfig.SUPABASE_URL
+
 
 ## method: "GET" | "POST" | "PATCH" | "DELETE"
 ## path: starts with "/", e.g. "/rest/v1/progress?select=problem_id"
@@ -33,7 +37,7 @@ func call_api(method: String, path: String, body: Variant = null, access_token: 
 	headers.append_array(extra_headers)
 
 	var payload := "" if body == null else JSON.stringify(body)
-	var err := http.request(AppConfig.SUPABASE_URL + path, headers, METHODS[method], payload)
+	var err := http.request(base_url + path, headers, METHODS[method], payload)
 	if err != OK:
 		http.queue_free()
 		return _reply(false, 0, null, "Could not start the request (error %d)." % err)

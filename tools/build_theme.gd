@@ -108,6 +108,31 @@ func _init() -> void:
 	theme.set_color("font_hover_pressed_color", "Tab", ACCENT)
 	theme.set_color("font_focus_color", "Tab", MUTED)
 
+	# A full-width row in a list (topics, problems).
+	theme.set_type_variation("Row", "Button")
+	_font_of(theme, "Row", mono, 26)
+	theme.set_stylebox("normal", "Row", _box(PANEL, LINE, 2, 28, 26))
+	theme.set_stylebox("hover", "Row", _box(PANEL, LINE_STRONG, 2, 28, 26))
+	theme.set_stylebox("pressed", "Row", _box(PANEL, ACCENT, 2, 28, 26))
+	theme.set_stylebox("disabled", "Row", _box(PANEL, LINE, 2, 28, 26))
+	theme.set_color("font_color", "Row", TEXT)
+	theme.set_color("font_hover_color", "Row", TEXT)
+	theme.set_color("font_pressed_color", "Row", ACCENT)
+	theme.set_color("font_hover_pressed_color", "Row", ACCENT)
+	theme.set_color("font_focus_color", "Row", TEXT)
+	theme.set_color("font_disabled_color", "Row", DIM)
+
+	_label(theme, "Code", mono, 24, TEXT)
+	theme.set_stylebox("normal", "TextEdit", _box(BG, LINE_STRONG, 2, 20, 20))
+	theme.set_stylebox("focus", "TextEdit", _box(BG, ACCENT, 2, 20, 20))
+	theme.set_stylebox("read_only", "TextEdit", _box(PANEL, LINE, 2, 20, 20))
+	_font_of(theme, "TextEdit", mono, 26)
+	theme.set_color("font_color", "TextEdit", TEXT)
+	theme.set_color("font_placeholder_color", "TextEdit", DIM)
+	theme.set_color("caret_color", "TextEdit", ACCENT)
+	theme.set_color("selection_color", "TextEdit", Color(ACCENT, 0.3))
+	theme.set_color("background_color", "TextEdit", BG)
+
 	# ---- text fields ----
 	_font_of(theme, "LineEdit", mono, 28)
 	theme.set_stylebox("normal", "LineEdit", _box(BG, LINE_STRONG, 2, 24, 24))
@@ -128,6 +153,10 @@ func _init() -> void:
 	var bar := _box(PANEL, LINE, 0, 0, 0)
 	bar.border_width_top = 2
 	theme.set_stylebox("panel", "BottomBar", bar)
+	# A page that sits over a screen and hides it.
+	theme.set_type_variation("Backdrop", "PanelContainer")
+	theme.set_stylebox("panel", "Backdrop", _box(BG, BG, 0, 0, 0))
+
 	theme.set_stylebox("panel", "ScrollContainer", StyleBoxEmpty.new())
 
 	var rule := StyleBoxLine.new()
