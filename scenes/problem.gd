@@ -1,7 +1,14 @@
 extends PanelContainer
-## One problem: prompt, the code as it stands (starter or draft), Run with
-## the judge's results, and the note. Opened by App.open_problem(); Back
-## closes it.
+## One problem, in one of the tap modes: put the lines in order, fix the
+## bug, or say what it prints. Run sends the assembled code to the judge;
+## the results panel and the note are below. Opened by App.open_problem();
+## Back closes it.
+
+const OrderMode := preload("res://scenes/modes/order_mode.gd")
+const BugMode := preload("res://scenes/modes/bug_mode.gd")
+const PrintMode := preload("res://scenes/modes/print_mode.gd")
+const MODES := ["order", "bug", "print"]
+const MODE_LABELS := {"order": "ORDER", "bug": "BUG", "print": "PRINT"}
 
 var problem_id := ""
 ## Opened from the review slot: the first verdict decides the review.
@@ -12,8 +19,12 @@ var review := false
 @onready var title: Label = $Margin/Column/Scroll/Body/Title
 @onready var status: Label = $Margin/Column/Scroll/Body/Status
 @onready var prompt: Label = $Margin/Column/Scroll/Body/Prompt
-@onready var code: Label = $Margin/Column/Scroll/Body/CodePanel/CodeScroll/Code
-@onready var run_button: Button = $Margin/Column/Scroll/Body/Run
+@onready var mode_bar: HBoxContainer = $Margin/Column/Scroll/Body/ModeBar
+@onready var mode_host: VBoxContainer = $Margin/Column/Scroll/Body/ModeHost
+@onready var preparing: Label = $Margin/Column/Scroll/Body/Preparing
+@onready var actions: HBoxContainer = $Margin/Column/Scroll/Body/Actions
+@onready var run_button: Button = $Margin/Column/Scroll/Body/Actions/Run
+@onready var reset_button: Button = $Margin/Column/Scroll/Body/Actions/Reset
 @onready var results: VBoxContainer = $Margin/Column/Scroll/Body/Results
 @onready var verdict: Label = $Margin/Column/Scroll/Body/Results/Verdict
 @onready var count: Label = $Margin/Column/Scroll/Body/Results/Count
@@ -27,16 +38,20 @@ var review := false
 @onready var resolved: Button = $Margin/Column/Scroll/Body/NoteRow/Resolved
 @onready var saved: Label = $Margin/Column/Scroll/Body/NoteRow/Saved
 
+var mode := ""
+var _widget: Control
 var _save_timer: Timer
 var _loading := true
 ## What Submission needs to remember across the runs of this visit.
 var _visit := {}
+var _switching := 0
 
 
 func _ready() -> void:
 	_visit = {"review": review, "review_recorded": false, "attempt_fails": 0}
 	back.pressed.connect(close)
 	run_button.pressed.connect(_on_run)
+	reset_button.pressed.connect(_on_reset)
 	_save_timer = Timer.new()
 	_save_timer.one_shot = true
 	_save_timer.wait_time = 1.0
@@ -52,6 +67,7 @@ func _ready() -> void:
 			_save_note())
 	Sync.state_changed.connect(_update_saved)
 	render()
+	set_mode(default_mode())
 
 
 func render() -> void:
@@ -64,8 +80,6 @@ func render() -> void:
 	title.text = str(p.title).to_upper()
 	prompt.text = str(p.prompt)
 	_render_status()
-	# Labels swallow tabs, so show each as four spaces.
-	code.text = current_code().replace("\t", "    ")
 	var n := Notes.get_note(problem_id)
 	note.text = str(n.get("text", ""))
 	resolved.button_pressed = bool(n.get("resolved", false))
@@ -84,10 +98,115 @@ func _render_status() -> void:
 		status.text = "%d MISS%s SO FAR" % [fails, "" if fails == 1 else "ES"]
 
 
-## The draft when there is one, else the starter.
+# ---- modes ----
+
+## A review alternates like the site: order on odd review steps, bug on the
+## others. Otherwise the problem id picks one, so a problem always opens the
+## same way.
+func default_mode() -> String:
+	if review and Reviews.is_in_review(problem_id):
+		return "order" if int(Reviews.rows()[problem_id].get("step", 0)) % 2 == 1 else "bug"
+	return MODES[Modes.seeded_order(problem_id + ":mode", MODES.size())[0]]
+
+
+func set_mode(name: String) -> void:
+	var p := Bank.problem(problem_id)
+	if p.is_empty():
+		return
+	mode = name
+	_switching += 1
+	var token := _switching
+	_render_mode_bar()
+	_clear_results()
+	_clear(mode_host)
+	_widget = null
+	preparing.visible = name != "order"
+	actions.visible = false
+
+	# The widget joins the tree before its setup, hidden, so the setup can
+	# tell when the page went away while it was waiting on the judge.
+	var widget: Control
+	match name:
+		"order":
+			widget = OrderMode.new()
+		"bug":
+			widget = BugMode.new()
+		"print":
+			widget = PrintMode.new()
+	widget.visible = false
+	mode_host.add_child(widget)
+	var ok := true
+	if name == "order":
+		widget.setup(p)
+	else:
+		ok = await widget.setup(p)
+	if not is_inside_tree() or token != _switching:
+		if is_instance_valid(widget):
+			widget.queue_free()
+		return
+	preparing.visible = false
+	if not ok:
+		widget.queue_free()
+		if name != "order":
+			set_mode("order")
+			_show_note_only("[!] No %s version of this problem" % ("bug" if name == "bug" else "print"), "Showing it as lines to order instead.")
+		return
+	_widget = widget
+	widget.visible = true
+	if widget.has_signal("answered"):
+		widget.answered.connect(_on_answered)
+	actions.visible = true
+	run_button.visible = name != "print"
+	reset_button.visible = true
+
+
+func _render_mode_bar() -> void:
+	_clear(mode_bar)
+	var label := Label.new()
+	label.theme_type_variation = &"Small"
+	label.text = "TRY AS"
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	mode_bar.add_child(label)
+	for m in MODES:
+		if m == mode:
+			var active := Label.new()
+			active.theme_type_variation = &"Accent"
+			active.text = MODE_LABELS[m]
+			active.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			active.custom_minimum_size = Vector2(0, 88)
+			active.add_theme_constant_override("outline_size", 0)
+			var pad := MarginContainer.new()
+			pad.add_theme_constant_override("margin_left", 8)
+			pad.add_theme_constant_override("margin_right", 8)
+			pad.add_child(active)
+			mode_bar.add_child(pad)
+		else:
+			var button := Button.new()
+			button.theme_type_variation = &"Link"
+			button.custom_minimum_size = Vector2(0, 88)
+			button.mouse_filter = Control.MOUSE_FILTER_PASS
+			button.text = MODE_LABELS[m]
+			button.pressed.connect(func() -> void: set_mode(m))
+			mode_bar.add_child(button)
+	var typed := Label.new()
+	typed.theme_type_variation = &"Dim"
+	typed.text = "TYPE · SOON"
+	typed.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	mode_bar.add_child(typed)
+
+
+## The code the current mode has assembled.
 func current_code() -> String:
+	if _widget and _widget.has_method("code"):
+		return _widget.code()
 	var p := Bank.problem(problem_id)
 	return str(Progress.draft(problem_id).get("code", p.get("starter", "")))
+
+
+func _on_reset() -> void:
+	if _widget and _widget.has_method("reset"):
+		_widget.reset()
+	_clear_results()
 
 
 # ---- running ----
@@ -97,27 +216,58 @@ func _on_run() -> void:
 	if p.is_empty() or Grader.busy:
 		return
 	run_button.disabled = true
+	_clear_results()
 	results.visible = true
 	verdict.theme_type_variation = &"Muted"
 	verdict.text = "Running…"
+
+	var reply: Dictionary = await Grader.run(current_code(), p)
+	if not is_inside_tree():
+		return
+	var outcome := Submission.record(p, reply, _visit)
+	_render_result(p, reply, outcome, true)
+	_render_status()
+	run_button.disabled = false
+
+
+## A pick in the print mode: recorded like a run, shown without test rows.
+func _on_answered(correct: bool, reply: Dictionary) -> void:
+	var p := Bank.problem(problem_id)
+	var outcome := Submission.record(p, reply, _visit)
+	if outcome.verdict.begins_with("[x] All tests pass"):
+		outcome.verdict = "[x] Right · solved"
+	elif outcome.verdict.begins_with("[x] Not yet"):
+		outcome.verdict = "[x] Not that one · " + Submission.miss_text(problem_id)
+	_clear_results()
+	results.visible = true
+	_render_result(p, reply, outcome, false)
+	if not correct:
+		verdict_note.visible = true
+		verdict_note.text = "The right answer is marked. Reset to try again." if outcome.note == "" else outcome.note
+	_render_status()
+
+
+func _clear_results() -> void:
+	results.visible = false
 	count.text = ""
 	verdict_note.text = ""
+	verdict_note.visible = false
 	_clear(tests)
 	output_label.visible = false
 	output.visible = false
 	errors_label.visible = false
 	errors.visible = false
 
-	var reply: Dictionary = await Grader.run(current_code(), p)
-	if not is_inside_tree():
-		return
-	var outcome := Submission.record(p, reply, _visit)
-	_render_result(p, reply, outcome)
-	_render_status()
-	run_button.disabled = false
+
+func _show_note_only(text: String, detail: String) -> void:
+	results.visible = true
+	verdict.theme_type_variation = &"Amber"
+	verdict.text = text
+	verdict_note.visible = true
+	verdict_note.text = detail
 
 
-func _render_result(p: Dictionary, reply: Dictionary, outcome: Dictionary) -> void:
+func _render_result(p: Dictionary, reply: Dictionary, outcome: Dictionary, with_rows: bool) -> void:
 	var result: Dictionary = reply.result
 	verdict.theme_type_variation = &"Accent" if outcome.pass else &"Error"
 	verdict.text = outcome.verdict
@@ -131,6 +281,8 @@ func _render_result(p: Dictionary, reply: Dictionary, outcome: Dictionary) -> vo
 		return
 
 	count.text = "%d / %d TESTS · %d MS" % [int(result.passed), int(result.total), reply.ms]
+	if not with_rows:
+		return
 	var rtype := Fmt.return_type(str(p.get("signature", "")))
 	var print_only := Fmt.print_only(p)
 	var printed := []

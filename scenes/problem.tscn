@@ -28,7 +28,7 @@ text = "‹ BACK"
 
 [node name="Meta" type="Label" parent="Margin/Column/TopBar"]
 layout_mode = 2
-size_flags_horizontal = 10
+size_flags_horizontal = 3
 theme_type_variation = &"Small"
 text = "TOPIC · 01"
 horizontal_alignment = 2
@@ -62,35 +62,36 @@ layout_mode = 2
 text = "Prompt"
 autowrap_mode = 3
 
-[node name="CodeLabel" type="Label" parent="Margin/Column/Scroll/Body"]
+[node name="ModeBar" type="HBoxContainer" parent="Margin/Column/Scroll/Body"]
 layout_mode = 2
-theme_type_variation = &"Small"
-text = "CODE"
+theme_override_constants/separation = 4
 
-[node name="CodePanel" type="PanelContainer" parent="Margin/Column/Scroll/Body"]
+[node name="ModeHost" type="VBoxContainer" parent="Margin/Column/Scroll/Body"]
 layout_mode = 2
 
-[node name="CodeScroll" type="ScrollContainer" parent="Margin/Column/Scroll/Body/CodePanel"]
+[node name="Preparing" type="Label" parent="Margin/Column/Scroll/Body"]
+visible = false
 layout_mode = 2
-vertical_scroll_mode = 0
+theme_type_variation = &"Muted"
+text = "Preparing…"
 
-[node name="Code" type="Label" parent="Margin/Column/Scroll/Body/CodePanel/CodeScroll"]
+[node name="Actions" type="HBoxContainer" parent="Margin/Column/Scroll/Body"]
 layout_mode = 2
-theme_type_variation = &"Code"
-text = "func solve():"
+theme_override_constants/separation = 12
 
-[node name="Run" type="Button" parent="Margin/Column/Scroll/Body"]
+[node name="Run" type="Button" parent="Margin/Column/Scroll/Body/Actions"]
 custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
+size_flags_horizontal = 3
 mouse_filter = 1
 theme_type_variation = &"Primary"
 text = "RUN"
 
-[node name="CodeNote" type="Label" parent="Margin/Column/Scroll/Body"]
+[node name="Reset" type="Button" parent="Margin/Column/Scroll/Body/Actions"]
+custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
-theme_type_variation = &"Dim"
-text = "Run checks the code above against the tests. Writing your own code on the phone comes next."
-autowrap_mode = 3
+mouse_filter = 1
+text = "RESET"
 
 [node name="Results" type="VBoxContainer" parent="Margin/Column/Scroll/Body"]
 visible = false

@@ -38,8 +38,10 @@ func _ready() -> void:
 func run(code: String, problem: Dictionary) -> Dictionary:
 	if runner == null:
 		return _reply({"status": "error", "error": "the judge is not installed"}, [], 0, false)
-	if busy:
-		return _reply({"status": "error", "error": "a run is already in progress"}, [], 0, false)
+	# Runs queue up: a mode preparing its puzzle and a tap on Run can both
+	# want the judge at once.
+	while busy:
+		await get_tree().process_frame
 	busy = true
 	_reap()
 	var log_from := _log_size()
