@@ -144,6 +144,22 @@ func _init() -> void:
 	theme.set_color("selection_color", "LineEdit", Color(ACCENT, 0.3))
 	theme.set_constant("minimum_character_width", "LineEdit", 4)
 
+	# ---- the code editor ----
+	_font_of(theme, "CodeEdit", mono, 26)
+	theme.set_stylebox("normal", "CodeEdit", _box(BG, LINE_STRONG, 2, 16, 16))
+	theme.set_stylebox("focus", "CodeEdit", _box(BG, ACCENT, 2, 16, 16))
+	theme.set_stylebox("read_only", "CodeEdit", _box(PANEL, LINE, 2, 16, 16))
+	theme.set_color("font_color", "CodeEdit", TEXT)
+	theme.set_color("font_placeholder_color", "CodeEdit", DIM)
+	theme.set_color("caret_color", "CodeEdit", ACCENT)
+	theme.set_color("selection_color", "CodeEdit", Color(ACCENT, 0.3))
+	theme.set_color("background_color", "CodeEdit", BG)
+	theme.set_color("current_line_color", "CodeEdit", Color(TEXT, 0.04))
+	theme.set_color("line_number_color", "CodeEdit", DIM)
+	theme.set_color("brace_mismatch_color", "CodeEdit", ERROR)
+	theme.set_color("word_highlighted_color", "CodeEdit", Color(ACCENT, 0.15))
+	theme.set_constant("line_spacing", "CodeEdit", 8)
+
 	# ---- panels ----
 	theme.set_stylebox("panel", "PanelContainer", _box(PANEL, LINE, 2, 32, 32))
 	theme.set_stylebox("panel", "Panel", _box(PANEL, LINE, 2, 0, 0))

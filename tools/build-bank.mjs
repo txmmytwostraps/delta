@@ -2,7 +2,7 @@
 // the app reads: bank/problems.json and bank/route.json.
 //   node tools/build-bank.mjs <site checkout> <output dir>
 import { pathToFileURL } from "node:url";
-import { readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync, copyFileSync } from "node:fs";
 import { join } from "node:path";
 
 const [site, out] = process.argv.slice(2);
@@ -22,6 +22,10 @@ writeFileSync(join(out, "route.json"), JSON.stringify({
   new_per_day: route.NEW_PER_DAY,
 }, null, 2) + "\n");
 
+// The concept cards, as they are.
+const cardsFile = join(site, "cards", "cards.json");
+if (existsSync(cardsFile)) copyFileSync(cardsFile, join(out, "cards.json"));
+
 // Every problem, in the order the site lists them (index.json decides).
 const dir = join(site, "problems");
 const index = JSON.parse(readFileSync(join(dir, "index.json"), "utf8"));
@@ -31,4 +35,4 @@ const missing = readdirSync(dir).filter((f) => f.endsWith(".json") && f !== "ind
 if (missing.length) console.warn(`not in index.json, skipped: ${missing.join(", ")}`);
 writeFileSync(join(out, "problems.json"), JSON.stringify({ concepts: index.concepts, problems }) + "\n");
 
-console.log(`${out}: ${problems.length} problems, ${route.TOPICS.length} topics, ${route.MILESTONES.length} milestones`);
+console.log(`${out}: ${problems.length} problems, ${route.TOPICS.length} topics, ${route.MILESTONES.length} milestones${existsSync(cardsFile) ? ", cards" : ""}`);

@@ -84,8 +84,9 @@ func solves_on(key: String) -> Array:
 	return out
 
 
-# ---- the course lock ("finished through lesson N") ----
+# ---- settings kept on the phone ----
 
+## "finished through lesson N"
 func course_lock() -> int:
 	return int(Store.get_value("course_lock", Bank.default_course_lock))
 
@@ -93,6 +94,40 @@ func course_lock() -> int:
 func set_course_lock(n: int) -> void:
 	Store.set_value("course_lock", n)
 	changed.emit()
+
+
+## New problems in the day's run. The site uses the bank's number; a
+## different number here changes the phone's set.
+func new_per_day() -> int:
+	return int(Store.get_value("new_per_day", Bank.new_per_day))
+
+
+func set_new_per_day(n: int) -> void:
+	Store.set_value("new_per_day", clampi(n, 1, 10))
+	changed.emit()
+
+
+## "HH:MM" for the review reminder; "" for none.
+func reminder_time() -> String:
+	return str(Store.get_value("reminder_time", "19:00"))
+
+
+func set_reminder_time(hhmm: String) -> void:
+	Store.set_value("reminder_time", hhmm)
+	changed.emit()
+
+
+# ---- time spent today (while the app is in front) ----
+
+func minutes_today() -> int:
+	return int(float(Store.section("time").get(today_key(), 0)) / 60.0)
+
+
+## Called by the app once a while with the seconds since the last call.
+func add_time(seconds: float) -> void:
+	var t := Store.section("time")
+	t[today_key()] = float(t.get(today_key(), 0)) + seconds
+	Store.save()
 
 
 # ---- topics on the route ----
@@ -130,21 +165,47 @@ func current_topic(solved_map: Variant = null) -> Dictionary:
 	return with_problems[-1] if with_problems.size() > 0 else {}
 
 
-func next_milestone() -> Dictionary:
+## Milestones: unlocked once every topic up to `after` is cleared; built in
+## steps whose ids (m1-s1 …) live in the solved map like problems do, so
+## they sync with the account for free.
+func milestone_status(m: Dictionary) -> Dictionary:
 	var all := route_topics()
-	for m in Bank.milestones:
-		var idx := -1
-		for i in all.size():
-			if all[i].concept == m.after:
-				idx = i
-				break
-		var before := all.slice(0, idx + 1)
-		var unlocked: bool = before.all(func(t: Dictionary) -> bool: return t.total == 0 or t.done == t.total)
-		var to_go: int = before.filter(func(t: Dictionary) -> bool: return t.total > 0 and t.done < t.total).size()
-		var out: Dictionary = m.duplicate()
-		out["unlocked"] = unlocked
-		out["topics_to_go"] = to_go
-		return out
+	var idx := -1
+	for i in all.size():
+		if all[i].concept == m.after:
+			idx = i
+			break
+	var before: Array = all.slice(0, idx + 1).filter(func(t: Dictionary) -> bool: return t.total > 0)
+	var to_go: int = before.filter(func(t: Dictionary) -> bool: return t.done < t.total).size()
+	var step_ids := []
+	for i in int(m.get("steps", 0)):
+		step_ids.append("%s-s%d" % [m.id, i + 1])
+	var steps_done: int = step_ids.filter(func(id: String) -> bool: return is_solved(id)).size()
+	var done: bool = not bool(m.get("planned", false)) and steps_done == int(m.get("steps", 0))
+	var done_at: Variant = null
+	if done:
+		var dates: Array = step_ids.map(func(id: String) -> String: return str(solved()[id]))
+		dates.sort()
+		done_at = dates[-1]
+	var out: Dictionary = m.duplicate()
+	out["unlocked"] = to_go == 0
+	out["topics_to_go"] = to_go
+	out["step_ids"] = step_ids
+	out["steps_done"] = steps_done
+	out["done"] = done
+	out["done_at"] = done_at
+	out["godot_done"] = is_solved("%s-godot" % m.id)
+	return out
+
+
+func milestones() -> Array:
+	return Bank.milestones.map(milestone_status)
+
+
+func next_milestone() -> Dictionary:
+	for m in milestones():
+		if not m.done:
+			return m
 	return {}
 
 
@@ -175,7 +236,7 @@ func today_run() -> Dictionary:
 	var unsolved: Array = []
 	if not t.is_empty():
 		unsolved = t.list.filter(func(p: Dictionary) -> bool: return not at_start.has(p.id))
-	var n := Bank.new_per_day
+	var n := new_per_day()
 	var run := {
 		"day": key,
 		"topic": t.get("concept", null),
@@ -198,23 +259,35 @@ func run_status() -> Dictionary:
 	var new_done: int = new_ids.filter(func(id: String) -> bool: return is_solved(id)).size()
 	var extra_done: bool = is_solved(run.extra_id) if run.extra_id != null else new_ids.size() > 0
 
+	# Slot 01: the review queue, problems and concept cards together, as the
+	# site shows it.
 	var q := Reviews.due_today(key)
+	var cq := Reviews.cards_due_today(key)
 	var pending: Array = q.pending
-	var total: int = pending.size() + q.done_today.size()
+	var card_pending: int = cq.pending.size()
+	var total: int = pending.size() + q.done_today.size() + card_pending + cq.done_today.size()
+	var pending_all: int = pending.size() + card_pending
 	var review_slot: Dictionary
 	if total == 0:
 		var any_rows := Reviews.rows().size() > 0
-		review_slot = {"n": "01", "title": "REVIEW", "detail": "nothing due today" if any_rows else "no reviews yet — clear a topic to start them", "done": true, "kind": "review", "first_id": null}
+		review_slot = {"n": "01", "title": "REVIEW", "detail": "nothing due today" if any_rows else "no reviews yet — solve a problem to start its concept cards, clear a topic to start its problems", "done": true, "kind": "review", "first_id": null}
 	else:
 		var titles := []
 		for r in pending:
 			var title := Reviews.topic_title(r.topic)
 			if not titles.has(title):
 				titles.append(title)
-		var detail := "%d done today" % q.done_today.size()
-		if pending.size() > 0:
-			detail = ", ".join(titles) + (" · %d more roll to tomorrow" % q.rolled if q.rolled > 0 else "")
-		review_slot = {"n": "01", "title": "REVIEW · %d DUE" % pending.size(), "detail": detail, "done": pending.is_empty(), "kind": "review", "first_id": pending[0].problem_id if pending.size() > 0 else null}
+		var parts := []
+		if titles.size() > 0:
+			parts.append(", ".join(titles))
+		if card_pending > 0:
+			parts.append("%d concept card%s" % [card_pending, "" if card_pending == 1 else "s"])
+		var detail := "%d done today" % (q.done_today.size() + cq.done_today.size())
+		if pending_all > 0:
+			detail = " · ".join(parts) + (" · %d more roll to tomorrow" % q.rolled if q.rolled > 0 else "")
+		# first_id: the first problem due, or "cards" when only cards are left.
+		var first: Variant = pending[0].problem_id if pending.size() > 0 else ("cards" if card_pending > 0 else null)
+		review_slot = {"n": "01", "title": "REVIEW · %d DUE" % pending_all, "detail": detail, "done": pending_all == 0, "kind": "review", "first_id": first}
 
 	var first_new: Variant = null
 	for id in new_ids:
@@ -253,7 +326,7 @@ func day_done(key: String) -> bool:
 			return bool(run.done)
 		var new_ids: Array = run.new_ids
 		return new_ids.size() > 0 and new_ids.all(func(id: String) -> bool: return is_solved(id)) and (run.extra_id == null or is_solved(run.extra_id))
-	return solves_on(key).size() >= Bank.new_per_day + 1
+	return solves_on(key).size() >= new_per_day() + 1
 
 
 # ---- streak, level, runs ----

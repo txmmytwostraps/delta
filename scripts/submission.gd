@@ -49,7 +49,10 @@ static func _solve(id: String, problem: Dictionary, page: Dictionary) -> Diction
 	if first:
 		Progress.mark_solved(id)
 	var verdict := _log(id, true, first, page)
-	# Completing a topic starts its review week.
+	# The first solve in a topic puts its concept cards into the review queue;
+	# completing the topic starts its review week.
+	if first:
+		Reviews.schedule_cards_if_started(str(problem.concept))
 	if first and Reviews.schedule_topic_if_cleared(str(problem.concept)) and verdict.is_empty():
 		return {"pass": true, "verdict": "[x] Topic cleared", "note": "Reviews for this topic start tomorrow: two a day for a week."}
 	return verdict

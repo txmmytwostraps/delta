@@ -179,9 +179,11 @@ func pull() -> void:
 	_merge_progress(progress.data)
 	Reviews.replace_all(reviews.data)
 	Notes.merge(notes.data)
-	# A topic finished on the other machine starts its review week here.
+	# A topic finished on the other machine starts its review week here, and
+	# a topic started there puts its concept cards in the queue.
 	for concept in Bank.concepts:
 		Reviews.schedule_topic_if_cleared(concept)
+		Reviews.schedule_cards_if_started(concept)
 
 	offline = false
 	message = ""

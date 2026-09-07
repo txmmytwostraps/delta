@@ -10,7 +10,9 @@ var lessons: Array = []
 var default_course_lock := 20
 var new_per_day := 5
 var site_commit := ""
+var cards: Array = []             # concept cards, in file order
 
+var _card_by_id: Dictionary = {}
 var _by_id: Dictionary = {}
 var _by_concept: Dictionary = {}   # concept -> Array of problems
 var _topic_by_concept: Dictionary = {}
@@ -39,9 +41,68 @@ func _ready() -> void:
 	for t in topics:
 		_topic_by_concept[t.concept] = t
 
+	var card_list: Variant = _read_json("res://bank/cards.json")
+	if card_list is Array:
+		cards = card_list
+	for c in cards:
+		_card_by_id[c.id] = c
+
 	var stamp := FileAccess.open("res://bank/COMMIT", FileAccess.READ)
 	if stamp:
 		site_commit = stamp.get_as_text().strip_edges()
+
+
+# ---- concept cards ----
+# One per core concept, grouped by the lesson they belong to. In the review
+# queue a card's id is "card:<id>", so it never collides with a problem.
+
+func card(id: String) -> Dictionary:
+	return _card_by_id.get(id.trim_prefix("card:"), {})
+
+
+static func card_id(c: Dictionary) -> String:
+	return "card:" + str(c.id)
+
+
+static func is_card_id(id: String) -> bool:
+	return id.begins_with("card:")
+
+
+func lesson_of(concept: String) -> int:
+	return int(topic(concept).get("lesson", -1))
+
+
+## Cards for a topic: every card whose own topic is in the same lesson.
+func cards_for_concept(concept: String) -> Array:
+	var lesson := lesson_of(concept)
+	if lesson < 0:
+		return []
+	var concepts := {}
+	for t in topics:
+		if int(t.lesson) == lesson:
+			concepts[t.concept] = true
+	return cards.filter(func(c: Dictionary) -> bool: return concepts.has(c.concept))
+
+
+## Cards grouped by lesson number, in course order:
+## [{ "lesson": int, "titles": [topic titles], "cards": [...] }]
+func cards_by_lesson() -> Array:
+	var groups := {}
+	var order := []
+	for t in topics:
+		var here: Array = cards.filter(func(c: Dictionary) -> bool: return c.concept == t.concept)
+		if here.is_empty():
+			continue
+		var lesson := int(t.lesson)
+		if not groups.has(lesson):
+			groups[lesson] = {"lesson": lesson, "titles": [], "cards": []}
+			order.append(lesson)
+		groups[lesson].titles.append(t.title)
+		groups[lesson].cards.append_array(here)
+	var out := []
+	for lesson in order:
+		out.append(groups[lesson])
+	return out
 
 
 func problem(id: String) -> Dictionary:

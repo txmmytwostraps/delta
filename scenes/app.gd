@@ -9,8 +9,21 @@ const JudgeCheckScene := preload("res://scenes/judge_check.tscn")
 @onready var tabs: HBoxContainer = $TabBar/Tabs
 
 
+var _clock := 0.0
+
+
 func _ready() -> void:
 	add_to_group("app")
+	var ticker := Timer.new()
+	ticker.wait_time = 30.0
+	ticker.timeout.connect(func() -> void:
+		# Only time with the app in front counts, at most a minute per tick.
+		if DisplayServer.window_is_focused():
+			Progress.add_time(minf(60.0, Time.get_unix_time_from_system() - _clock))
+		_clock = Time.get_unix_time_from_system())
+	add_child(ticker)
+	ticker.start()
+	_clock = Time.get_unix_time_from_system()
 	for button: Button in tabs.get_children():
 		button.toggled.connect(func(on: bool) -> void:
 			if on:

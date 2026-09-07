@@ -33,9 +33,66 @@ func replace_all(remote: Array) -> void:
 	changed.emit()
 
 
-## Everything due on or before the day, oldest first (uncapped).
+## Everything due on or before the day, oldest first (uncapped). Problems only.
 func due(day: String) -> Array:
-	var out: Array = rows().values().filter(func(r: Dictionary) -> bool: return str(r.due_on) <= day)
+	return _due(day, false)
+
+
+## The day's list: at most REVIEW_CAP pending, plus the ones already reviewed
+## that day, plus how many roll over.
+func due_today(day: String) -> Dictionary:
+	return _due_today(day, false, REVIEW_CAP)
+
+
+# ---- concept cards: same rules, their own daily cap ----
+
+const CARD_CAP := 4
+
+
+func cards_due(day: String) -> Array:
+	return _due(day, true)
+
+
+func cards_due_today(day: String) -> Dictionary:
+	return _due_today(day, true, CARD_CAP)
+
+
+## Once a topic has its first solve, its concept cards enter the queue, due
+## from tomorrow, CARD_CAP a day. Returns true when it added any.
+func schedule_cards_if_started(concept: String) -> bool:
+	if not Auth.is_signed_in():
+		return false
+	var list := Bank.problems_in(concept)
+	if list.is_empty():
+		return false
+	var started := false
+	for p in list:
+		if Progress.is_solved(p.id):
+			started = true
+			break
+	if not started:
+		return false
+	var cards: Array = Bank.cards_for_concept(concept).filter(func(c: Dictionary) -> bool: return not rows().has(Bank.card_id(c)))
+	if cards.is_empty():
+		return false
+	var start := Progress.today_key()
+	var new_rows := []
+	for i in cards.size():
+		new_rows.append({
+			"user_id": Auth.user_id(), "problem_id": Bank.card_id(cards[i]), "topic": cards[i].concept, "stage": "fresh",
+			"due_on": add_days(start, i / CARD_CAP + 1), "step": 0, "clean_streak": 0,
+		})
+	Sync.queue_upsert("reviews", new_rows, "user_id,problem_id")
+	for r in new_rows:
+		rows()[r.problem_id] = r
+	Store.save()
+	changed.emit()
+	return true
+
+
+func _due(day: String, cards: bool) -> Array:
+	var out: Array = rows().values().filter(func(r: Dictionary) -> bool:
+		return Bank.is_card_id(str(r.problem_id)) == cards and str(r.due_on) <= day)
 	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		if a.due_on != b.due_on:
 			return str(a.due_on) < str(b.due_on)
@@ -43,13 +100,11 @@ func due(day: String) -> Array:
 	return out
 
 
-## The day's list: at most REVIEW_CAP pending, plus the ones already reviewed
-## that day, plus how many roll over.
-func due_today(day: String) -> Dictionary:
+func _due_today(day: String, cards: bool, cap: int) -> Dictionary:
 	var done_today: Array = rows().values().filter(func(r: Dictionary) -> bool:
-		return r.get("reviewed_at", null) != null and Streak.day_key(str(r.reviewed_at)) == day)
-	var all_due := due(day)
-	var pending := all_due.slice(0, maxi(0, REVIEW_CAP - done_today.size()))
+		return Bank.is_card_id(str(r.problem_id)) == cards and r.get("reviewed_at", null) != null and Streak.day_key(str(r.reviewed_at)) == day)
+	var all_due := _due(day, cards)
+	var pending := all_due.slice(0, maxi(0, cap - done_today.size()))
 	return {"pending": pending, "done_today": done_today, "rolled": maxi(0, all_due.size() - pending.size())}
 
 
