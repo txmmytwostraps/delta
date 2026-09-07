@@ -3,6 +3,7 @@ extends VBoxContainer
 ## and problem pages opened on top of them.
 
 const ProblemScene := preload("res://scenes/problem.tscn")
+const BugMode := preload("res://scenes/modes/bug_mode.gd")
 const EditorScene := preload("res://scenes/editor.tscn")
 const JudgeCheckScene := preload("res://scenes/judge_check.tscn")
 const FlashcardsScene := preload("res://scenes/flashcards.tscn")
@@ -16,6 +17,19 @@ const MilestoneScene := preload("res://scenes/milestone.tscn")
 ## Per problem, what one visit remembers across its pages and runs:
 ## misses so far, and whether a review's verdict was decided.
 var _visits: Dictionary = {}
+
+## The planted bug per problem or step id, once found: {} when there is
+## none. Finding one takes a few judge runs, so it is kept for the session.
+var bug_cache: Dictionary = {}
+
+
+## The bug for an item, found once. {} when the item has no bug version.
+func find_bug(item: Dictionary) -> Dictionary:
+	var id := str(item.get("id", ""))
+	if not bug_cache.has(id):
+		var found: Dictionary = await BugMode.find(item)
+		bug_cache[id] = found
+	return bug_cache[id]
 
 
 var _clock := 0.0
@@ -68,18 +82,22 @@ func visit_for(id: String, review: bool) -> Dictionary:
 	return _visits[id]
 
 
-## Turns the phone sideways for the editor and back for everything else.
-## The canvas follows the window (see Main.fit_canvas), so nothing else
-## changes size.
-func set_landscape(on: bool) -> void:
+## While the editor is open the phone may turn either way; everywhere else
+## it stays upright. Nothing is forced: the editor lays itself out for the
+## orientation it finds. The canvas follows the window (Main.fit_canvas).
+func set_editor_open(on: bool) -> void:
 	if OS.has_feature("mobile"):
-		DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_LANDSCAPE if on else DisplayServer.SCREEN_PORTRAIT)
-	elif OS.has_feature("pc"):
+		DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR if on else DisplayServer.SCREEN_PORTRAIT)
+	elif OS.has_feature("pc") and not editor_portrait_on_desktop:
 		DisplayServer.window_set_size(Vector2i(640, 360) if on else Vector2i(360, 640))
 	tab_bar.visible = not on
 	var main := get_tree().get_first_node_in_group("main")
 	if main:
 		main.fit_canvas()
+
+
+## Testing aid: keep the desktop window upright for the editor.
+var editor_portrait_on_desktop := false
 
 
 ## Flashcards: today's card review, or one lesson's cards to flip through.

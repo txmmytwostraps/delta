@@ -23,9 +23,8 @@ var visit: Dictionary = {}
 @onready var status: Label = $Column/Scroll/Margin/Body/Head/Status
 @onready var prompt: Label = $Column/Scroll/Margin/Body/Head/Prompt
 @onready var segments: HBoxContainer = $Column/Scroll/Margin/Body/Modes
-@onready var instruction_box: PanelContainer = $Column/Scroll/Margin/Body/Work/Instruction
-@onready var instruction_column: VBoxContainer = $Column/Scroll/Margin/Body/Work/Instruction/InstructionColumn
-@onready var instruction_text: Label = $Column/Scroll/Margin/Body/Work/Instruction/InstructionColumn/InstructionText
+@onready var instruction_column: VBoxContainer = $Column/Scroll/Margin/Body/Work/InstructionColumn
+@onready var instruction_text: Label = $Column/Scroll/Margin/Body/Work/InstructionColumn/InstructionText
 @onready var preparing: Label = $Column/Scroll/Margin/Body/Work/Preparing
 @onready var mode_host: VBoxContainer = $Column/Scroll/Margin/Body/Work/ModeHost
 @onready var notes_drawer: PanelContainer = $Column/NotesDrawer
@@ -77,7 +76,24 @@ func _ready() -> void:
 			_save_note())
 	Sync.state_changed.connect(_update_saved)
 	render()
+	_probe_modes()
 	set_mode(default_mode())
+
+
+## Modes a problem does not have are dimmed rather than offered: a bug
+## version exists only when the judge can plant one.
+func _probe_modes() -> void:
+	var p := Bank.problem(problem_id)
+	var app := get_tree().get_first_node_in_group("app")
+	if p.is_empty() or app == null:
+		return
+	var found: Dictionary = await app.find_bug(p)
+	if not is_inside_tree():
+		return
+	if found.is_empty():
+		segments.get_node("Bug").disabled = true
+		if mode == "bug":
+			set_mode("order")
 
 
 func render() -> void:
@@ -154,6 +170,12 @@ func set_mode(name: String) -> void:
 	var ok := true
 	if name == "order":
 		widget.setup(p)
+	elif name == "bug":
+		var app := get_tree().get_first_node_in_group("app")
+		var found: Dictionary = await app.find_bug(p) if app else {}
+		if token != _switching or not is_instance_valid(widget):
+			return
+		ok = not found.is_empty() and await widget.setup(p, found)
 	else:
 		ok = await widget.setup(p)
 	if not is_inside_tree() or token != _switching:
@@ -161,19 +183,20 @@ func set_mode(name: String) -> void:
 			widget.queue_free()
 		return
 	if not ok:
+		# No such version of this problem: the segment goes dim, order it is.
 		widget.queue_free()
+		segments.get_node(name.capitalize()).disabled = true
 		if name != "order":
-			await set_mode("order")
-			results.show_note("[!] No %s version of this problem" % ("bug" if name == "bug" else "print"), "Showing it as lines to order instead.")
-			instruction_text.visible = false
+			set_mode("order")
 		return
 	_widget = widget
 	widget.visible = true
 	instruction_text.text = widget.instruction()
-	if widget.has_signal("answered"):
-		widget.answered.connect(_on_answered)
-	run_button.visible = name != "print"
-	run_button.disabled = false
+	if name == "print":
+		widget.changed.connect(func() -> void: run_button.disabled = widget.selected < 0 or widget.graded)
+		run_button.disabled = true
+	else:
+		run_button.disabled = false
 
 
 func _open_editor() -> void:
@@ -197,6 +220,7 @@ func _on_reset() -> void:
 	instruction_text.visible = true
 	if _widget:
 		instruction_text.text = _widget.instruction()
+	run_button.disabled = mode == "print"
 
 
 # ---- running ----
@@ -204,6 +228,9 @@ func _on_reset() -> void:
 func _on_run() -> void:
 	var p := Bank.problem(problem_id)
 	if p.is_empty():
+		return
+	if mode == "print":
+		_grade_pick()
 		return
 	run_button.disabled = true
 	instruction_text.visible = false
@@ -218,18 +245,23 @@ func _on_run() -> void:
 	run_button.disabled = false
 
 
-## A pick in the print mode: recorded like a run, shown without test rows.
-func _on_answered(correct: bool, reply: Dictionary) -> void:
+## Print mode: the pick is graded and recorded like a run, shown without
+## test rows; the answers themselves show right and wrong.
+func _grade_pick() -> void:
 	var p := Bank.problem(problem_id)
-	var outcome := Submission.record(p, reply, visit)
+	var graded: Dictionary = _widget.grade() if _widget and _widget.has_method("grade") else {}
+	if graded.is_empty():
+		return
+	run_button.disabled = true
+	var outcome := Submission.record(p, graded.reply, visit)
 	if outcome.verdict.begins_with("All tests pass"):
 		outcome.verdict = "Right · solved"
 	elif outcome.verdict.begins_with("Not yet"):
 		outcome.verdict = "Not that one · " + Submission.miss_text(p)
-	if not correct and outcome.note == "":
+	if not graded.correct and outcome.note == "":
 		outcome.note = "The right answer is marked. Reset to try again."
 	instruction_text.visible = false
-	results.show_result(p, reply, outcome, false)
+	results.show_result(p, graded.reply, outcome, false)
 	scroll.scroll_vertical = 0
 	_render_status()
 

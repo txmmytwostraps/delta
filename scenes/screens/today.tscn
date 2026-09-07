@@ -35,6 +35,19 @@ layout_mode = 2
 theme_type_variation = &"Muted"
 text = "0 / 3"
 
+[node name="StreakRow" type="HBoxContainer" parent="Scroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="StreakLabel" type="Label" parent="Scroll/Body/StreakRow"]
+layout_mode = 2
+theme_type_variation = &"Small"
+text = "STREAK 0"
+vertical_alignment = 1
+
+[node name="WeekHost" type="VBoxContainer" parent="Scroll/Body/StreakRow"]
+layout_mode = 2
+
 [node name="Slots" type="VBoxContainer" parent="Scroll/Body"]
 layout_mode = 2
 theme_override_constants/separation = 16

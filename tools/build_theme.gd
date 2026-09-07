@@ -164,6 +164,32 @@ func _init() -> void:
 	theme.set_color("selection_color", "LineEdit", Color(ACCENT, 0.3))
 	theme.set_constant("minimum_character_width", "LineEdit", 4)
 
+	# A block of code: a panel with an accent bar down its left edge.
+	theme.set_type_variation("CodeBlock", "PanelContainer")
+	var code_block := _box(PANEL, ACCENT, 0, 20, 16)
+	code_block.border_width_left = 6
+	theme.set_stylebox("panel", "CodeBlock", code_block)
+
+	# An answer to choose: a radio row. Selected gets the accent border; after
+	# grading the right one fills accent and a wrong pick fills error.
+	for pair in [["Choice", CLEAR, LINE_STRONG, TEXT], ["ChoiceOn", CLEAR, ACCENT, TEXT], ["ChoiceRight", ACCENT, ACCENT, BG], ["ChoiceWrong", ERROR, ERROR, BG]]:
+		var vname: String = pair[0]
+		theme.set_type_variation(vname, "Button")
+		_font_of(theme, vname, mono, 28)
+		for state in ["normal", "hover", "pressed", "disabled"]:
+			theme.set_stylebox(state, vname, _box(pair[1], pair[2], 2, 24, 20))
+		theme.set_stylebox("focus", vname, StyleBoxEmpty.new())
+		for cname in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color", "font_disabled_color"]:
+			theme.set_color(cname, vname, pair[3])
+
+	# A line of code inside a block, coloured by BBCode.
+	theme.set_font("normal_font", "RichTextLabel", mono)
+	theme.set_font_size("normal_font_size", "RichTextLabel", 28)
+	theme.set_font("mono_font", "RichTextLabel", mono)
+	theme.set_font_size("mono_font_size", "RichTextLabel", 28)
+	theme.set_color("default_color", "RichTextLabel", TEXT)
+	theme.set_stylebox("normal", "RichTextLabel", StyleBoxEmpty.new())
+
 	# ---- the code editor ----
 	_font_of(theme, "CodeEdit", mono, 26)
 	theme.set_stylebox("normal", "CodeEdit", _box(BG, LINE_STRONG, 2, 16, 16))

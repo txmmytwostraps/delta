@@ -8,6 +8,29 @@ extends Node
 ## earliest date kept, fail counts take the larger, the newer draft wins, the
 ## review queue comes from the account, and notes take the newer version.
 
+## The streak rule (shared with the site; both compute it from the account
+## rows, so both must follow this text exactly):
+##
+##   1. A day is active when it has at least one solve (progress.solved_at)
+##      or one review (reviews.reviewed_at), in the user's local time.
+##   2. A full-run day is a day whose run was completed, as progress.js's
+##      dayDone has it: every review due that day done, the day's new
+##      problems solved, and the extra topic problem when there was one (a
+##      milestone step, once the run offers one). A day with no run record
+##      on this device counts when it has new_per_day + 1 or more solves.
+##   3. Walk the days from the first active day to today. The streak grows
+##      by one on each active day. A missed day breaks it, unless a rest day
+##      is held: then the rest day is consumed, the missed day counts as
+##      covered, and the streak grows by one.
+##   4. A rest day is earned on an active full-run day when none is held, at
+##      most one per calendar week (Monday to Sunday). Never more than one
+##      is held. It cannot be bought or set by hand.
+##   5. Today counts once it is active; an inactive today does not break
+##      the streak yet. Yesterday inactive and not covered ends it at zero.
+##   6. The longest streak is the highest value the walk reaches.
+##
+## Streak.compute() is the implementation.
+
 signal state_changed
 ## A pull finished; screens should redraw.
 signal pulled

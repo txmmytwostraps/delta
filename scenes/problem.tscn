@@ -122,15 +122,13 @@ text = "TYPE"
 layout_mode = 2
 theme_override_constants/separation = 24
 
-[node name="Instruction" type="PanelContainer" parent="Column/Scroll/Margin/Body/Work"]
-layout_mode = 2
-
-[node name="InstructionColumn" type="VBoxContainer" parent="Column/Scroll/Margin/Body/Work/Instruction"]
+[node name="InstructionColumn" type="VBoxContainer" parent="Column/Scroll/Margin/Body/Work"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="InstructionText" type="Label" parent="Column/Scroll/Margin/Body/Work/Instruction/InstructionColumn"]
+[node name="InstructionText" type="Label" parent="Column/Scroll/Margin/Body/Work/InstructionColumn"]
 layout_mode = 2
+theme_type_variation = &"Detail"
 text = "Put the lines in order."
 autowrap_mode = 3
 

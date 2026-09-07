@@ -52,6 +52,23 @@ layout_mode = 2
 theme_type_variation = &"Primary"
 text = "RUN"
 
+[node name="PromptLine" type="Button" parent="Margin/Column"]
+visible = false
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+theme_type_variation = &"Link"
+text = "▸ PROMPT"
+alignment = 0
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="Drawer" type="ScrollContainer" parent="Margin/Column"]
+visible = false
+custom_minimum_size = Vector2(0, 400)
+layout_mode = 2
+scroll_deadzone = 24
+horizontal_scroll_mode = 0
+
 [node name="Body" type="HBoxContainer" parent="Margin/Column"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -108,6 +125,7 @@ layout_mode = 2
 theme_type_variation = &"Code"
 autowrap_mode = 3
 
-[node name="Keys" type="HBoxContainer" parent="Margin/Column"]
+[node name="Keys" type="HFlowContainer" parent="Margin/Column"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6

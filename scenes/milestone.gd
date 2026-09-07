@@ -25,8 +25,8 @@ var step_at := -1
 @onready var prompt: Label = $Column/Scroll/Margin/Body/Head/Prompt
 @onready var segments: HBoxContainer = $Column/Scroll/Margin/Body/Modes
 @onready var work: VBoxContainer = $Column/Scroll/Margin/Body/Work
-@onready var instruction_column: VBoxContainer = $Column/Scroll/Margin/Body/Work/Instruction/InstructionColumn
-@onready var instruction_text: Label = $Column/Scroll/Margin/Body/Work/Instruction/InstructionColumn/InstructionText
+@onready var instruction_column: VBoxContainer = $Column/Scroll/Margin/Body/Work/InstructionColumn
+@onready var instruction_text: Label = $Column/Scroll/Margin/Body/Work/InstructionColumn/InstructionText
 @onready var mode_host: VBoxContainer = $Column/Scroll/Margin/Body/Work/ModeHost
 @onready var checks: VBoxContainer = $Column/Scroll/Margin/Body/Checks
 @onready var hints: VBoxContainer = $Column/Scroll/Margin/Body/Hints
@@ -131,7 +131,20 @@ func show_step(i: int) -> void:
 	stage.set_buttons(step.get("scene", {}).get("buttons", []))
 	_render_steps()
 	scroll.scroll_vertical = 0
+	segments.get_child(1).disabled = false
+	_probe_bug()
 	set_mode(mode if mode != "" else default_mode())
+
+
+## The bug segment goes dim when the judge cannot plant one in this step.
+func _probe_bug() -> void:
+	var app := get_tree().get_first_node_in_group("app")
+	if app == null:
+		return
+	var current := step
+	var found: Dictionary = await app.find_bug(current)
+	if is_inside_tree() and step == current and found.is_empty():
+		segments.get_child(1).disabled = true
 
 
 func show_godot() -> void:
@@ -298,17 +311,21 @@ func set_mode(name: String) -> void:
 	if name == "order":
 		widget.setup(step)
 	else:
-		ok = await widget.setup(step)
+		var app := get_tree().get_first_node_in_group("app")
+		var found: Dictionary = await app.find_bug(step) if app else {}
+		if token != _switching or not is_instance_valid(widget):
+			return
+		ok = not found.is_empty() and await widget.setup(step, found)
 	if not is_inside_tree() or token != _switching:
 		if is_instance_valid(widget):
 			widget.queue_free()
 		return
 	if not ok:
+		# No bug version of this step: the segment goes dim, order it is.
 		widget.queue_free()
+		segments.get_child(MODES.find(name)).disabled = true
 		if name != "order":
-			await set_mode("order")
-			results.show_note("[!] No bug version of this step", "Showing it as lines to order instead.")
-			instruction_text.visible = false
+			set_mode("order")
 		return
 	_widget = widget
 	widget.visible = true

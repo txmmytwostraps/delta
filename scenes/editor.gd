@@ -32,6 +32,10 @@ func _item() -> Dictionary:
 	return Bank.problem(problem_id)
 
 @onready var margin: MarginContainer = $Margin
+@onready var prompt_line: Button = $Margin/Column/PromptLine
+@onready var drawer: ScrollContainer = $Margin/Column/Drawer
+@onready var body: HBoxContainer = $Margin/Column/Body
+@onready var side_scroll: ScrollContainer = $Margin/Column/Body/Side
 @onready var back: Button = $Margin/Column/TopBar/Back
 @onready var title: Label = $Margin/Column/TopBar/Title
 @onready var saved: Label = $Margin/Column/TopBar/Saved
@@ -44,7 +48,7 @@ func _item() -> Dictionary:
 @onready var docs: VBoxContainer = $Margin/Column/Body/Side/SideColumn/Docs
 @onready var solution_toggle: Button = $Margin/Column/Body/Side/SideColumn/SolutionToggle
 @onready var solution: Label = $Margin/Column/Body/Side/SideColumn/Solution
-@onready var keys: HBoxContainer = $Margin/Column/Keys
+@onready var keys: HFlowContainer = $Margin/Column/Keys
 
 var results := ResultsPanel.new()
 var _save_timer: Timer
@@ -117,9 +121,14 @@ func _ready() -> void:
 		button.pressed.connect(func() -> void: _insert("\t" if k == "Tab" else k))
 		keys.add_child(button)
 
+	prompt_line.pressed.connect(func() -> void:
+		drawer.visible = not drawer.visible
+		prompt_line.text = ("▾ " if drawer.visible else "▸ ") + prompt_line.text.substr(2))
 	var app := get_tree().get_first_node_in_group("app")
 	if app:
-		app.set_landscape(true)
+		app.set_editor_open(true)
+	get_window().size_changed.connect(_layout)
+	_layout()
 	_loading = false
 	code.grab_focus()
 
@@ -127,7 +136,38 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	var app := get_tree().get_first_node_in_group("app")
 	if app:
-		app.set_landscape(false)
+		app.set_editor_open(false)
+
+
+## The editor follows the phone's rotation. Landscape: the code with the
+## side column beside it. Portrait: the prompt collapsed to one line above
+## the code (tap to open the drawer with the prompt, hints, stage and
+## results), the key row above the keyboard.
+func _layout() -> void:
+	var size := get_window().content_scale_size
+	var portrait := size.y > size.x
+	var column: VBoxContainer = side_scroll.get_node("SideColumn")
+	if portrait:
+		if column.get_parent() != drawer:
+			column.get_parent().remove_child(column)
+			drawer.add_child(column)
+		side_scroll.visible = false
+		prompt_line.visible = true
+		prompt_line.text = ("▾ " if drawer.visible else "▸ ") + str(_item().get("prompt", "")).replace("`", "").replace("\n", " ")
+	else:
+		if column.get_parent() != side_scroll:
+			column.get_parent().remove_child(column)
+			side_scroll.add_child(column)
+		side_scroll.visible = true
+		prompt_line.visible = false
+		drawer.visible = false
+
+
+## After a run in portrait the drawer opens so the result is seen.
+func _show_side() -> void:
+	if prompt_line.visible and not drawer.visible:
+		prompt_line.pressed.emit()
+	drawer.scroll_vertical = 0
 
 
 ## Keep the key row above the phone's keyboard.
@@ -293,6 +333,7 @@ func _on_run() -> void:
 	else:
 		_render_solution_lock(p)
 		_render_hints(p)
+	_show_side()
 	run_button.disabled = false
 
 

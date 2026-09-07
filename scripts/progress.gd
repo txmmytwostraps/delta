@@ -343,18 +343,34 @@ func active_days() -> Dictionary:
 	return days
 
 
+## Days with a full run, by the site's dayDone rule: a day with a run record
+## counts when that run was completed (every review due that day done, the
+## day's new problems solved, and the extra topic problem when there was
+## one); a day with no run record counts when it has new_per_day + 1 or
+## more solves.
+func full_run_days() -> Dictionary:
+	var out := {}
+	var counts := {}
+	for id in solved():
+		var key := Streak.day_key(str(solved()[id]))
+		if key != "":
+			counts[key] = int(counts.get(key, 0)) + 1
+	for key in counts:
+		if not runs().has(key) and int(counts[key]) >= new_per_day() + 1:
+			out[key] = true
+	for key in runs():
+		if day_done(key):
+			out[key] = true
+	return out
+
+
+## The streak with rest days: see "The streak rule" in sync.gd.
+func streak() -> Dictionary:
+	return Streak.compute(active_days(), full_run_days(), today_key())
+
+
 func streak_days() -> int:
-	var days := active_days()
-	var t := Time.get_unix_time_from_system()
-	if today_override != "":
-		t = float(Time.get_unix_time_from_datetime_string(today_override + "T12:00:00"))
-	if not days.has(Streak.key_for_unix(t)):
-		t -= 86400.0
-	var count := 0
-	while days.has(Streak.key_for_unix(t)):
-		count += 1
-		t -= 86400.0
-	return count
+	return int(streak().streak)
 
 
 ## Full daily runs finished, all time.

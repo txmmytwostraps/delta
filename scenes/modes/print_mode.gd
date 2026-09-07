@@ -1,11 +1,12 @@
 extends VBoxContainer
 ## What does this print: the solution, read-only, one of its tests, and four
-## answers. The right one is what the judge got from the solution; the wrong
-## ones come from buggy versions of it, so they look plausible.
+## answers as radio rows. Pick one, then Run grades it: the right answer
+## fills accent, a wrong pick fills error. The right one is what the judge
+## got from the solution; the wrong ones come from buggy versions of it.
 
-## correct: the pick was right. reply: what to record, in the judge's shape.
-signal answered(correct: bool, reply: Dictionary)
 signal instruction_changed
+## The pick changed (so Run can be enabled).
+signal changed
 
 const ANSWERS := 4
 
@@ -15,7 +16,8 @@ var _print_only := false
 var _answers: Array = []
 var _correct := -1
 var _reply: Dictionary = {}
-var _done := false
+var selected := -1
+var graded := false
 
 
 ## Runs the solution and a few buggy versions through the judge to build the
@@ -65,7 +67,7 @@ func instruction() -> String:
 		return ""
 	var t: Dictionary = _problem.tests[_test_index]
 	var frames: String = "after %d frame%s, " % [int(t.frames), "" if int(t.frames) == 1 else "s"] if t.has("frames") else ""
-	return "%s The judge calls %s%s." % ["What does this print?" if _print_only else "What does this return?", frames, Fmt.call_str(_problem, t.get("args", []))]
+	return "%s The judge calls %s%s. Pick an answer, then Run." % ["What does this print?" if _print_only else "What does this return?", frames, Fmt.call_str(_problem, t.get("args", []))]
 
 
 func code() -> String:
@@ -73,8 +75,33 @@ func code() -> String:
 
 
 func reset() -> void:
-	_done = false
+	selected = -1
+	graded = false
 	render()
+
+
+func pick(i: int) -> void:
+	if graded:
+		return
+	selected = i
+	render()
+	changed.emit()
+
+
+## Grades the pick. Returns { "correct": bool, "reply": Dictionary } with a
+## reply in the judge's shape for recording; {} when nothing is picked.
+func grade() -> Dictionary:
+	if selected < 0 or graded:
+		return {}
+	graded = true
+	var correct := selected == _correct
+	render()
+	var reply: Dictionary = _reply.duplicate(true)
+	if not correct:
+		reply.result["passed"] = 0
+		for r in reply.result.results:
+			r["pass"] = false
+	return {"correct": correct, "reply": reply}
 
 
 func render() -> void:
@@ -82,22 +109,19 @@ func render() -> void:
 		remove_child(child)
 		child.queue_free()
 	add_theme_constant_override("separation", 16)
-
-	var panel := PanelContainer.new()
-	var scroll := ScrollContainer.new()
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	var text := Label.new()
-	text.theme_type_variation = &"Code"
-	text.text = code().replace("\t", "    ")
-	scroll.add_child(text)
-	panel.add_child(scroll)
-	add_child(panel)
-
+	add_child(UI.code_view(code()))
 	var rtype := Fmt.return_type(str(_problem.get("signature", "")))
 	for i in _answers.size():
-		var button := UI.row(_answer_text(_answers[i], rtype), "", false, true)
-		button.disabled = _done
-		button.pressed.connect(func() -> void: _pick(i))
+		var state := ""
+		if graded and i == _correct:
+			state = "right"
+		elif graded and i == selected:
+			state = "wrong"
+		elif i == selected:
+			state = "on"
+		var button := UI.choice(_answer_text(_answers[i], rtype), state)
+		button.disabled = graded
+		button.pressed.connect(func() -> void: pick(i))
 		add_child(button)
 	instruction_changed.emit()
 
@@ -110,35 +134,5 @@ func _answer_text(v: Variant, rtype: String) -> String:
 		var strings := []
 		for line in lines:
 			strings.append(str(line))
-		return "\n".join(strings)
+		return " ⏎ ".join(strings)
 	return Fmt.fmt_typed(v, rtype)
-
-
-func _pick(i: int) -> void:
-	if _done:
-		return
-	_done = true
-	var correct := i == _correct
-	var buttons := []
-	for child in get_children():
-		if child is Button:
-			buttons.append(child)
-	for b in buttons:
-		b.disabled = true
-	# Mark the pick and the right answer on the rows.
-	if i < buttons.size():
-		_prefix(buttons[i], "✓ " if correct else "✗ ")
-	if not correct and _correct < buttons.size():
-		_prefix(buttons[_correct], "✓ ")
-	var reply: Dictionary = _reply.duplicate(true)
-	if not correct:
-		reply.result["passed"] = 0
-		for r in reply.result.results:
-			r["pass"] = false
-	answered.emit(correct, reply)
-
-
-func _prefix(button: Button, mark: String) -> void:
-	for label in button.find_children("*", "Label", true, false):
-		label.text = mark + label.text
-		return

@@ -4,7 +4,9 @@ extends MarginContainer
 
 @onready var name_label: Label = $Scroll/Body/Account/Column/Name
 @onready var email_label: Label = $Scroll/Body/Account/Column/Email
-@onready var streak_value: Label = $Scroll/Body/Streak/Column/Value
+@onready var streak_value: Label = $Scroll/Body/Streak/Column/Numbers/Value
+@onready var streak_longest: Label = $Scroll/Body/Streak/Column/Numbers/Longest
+@onready var week_host: VBoxContainer = $Scroll/Body/Streak/Column/WeekHost
 @onready var streak_note: Label = $Scroll/Body/Streak/Column/Note
 @onready var set_size_value: Label = $Scroll/Body/Settings/Column/SetSize/SetSizeColumn/SetSizeValue
 @onready var size_less: Button = $Scroll/Body/Settings/Column/SetSize/SizeLess
@@ -52,7 +54,13 @@ func _refresh() -> void:
 	name_label.text = Auth.display_name()
 	email_label.text = Auth.email()
 	email_label.visible = Auth.email() != "" and Auth.email() != Auth.display_name()
-	streak_value.text = str(Progress.streak_days())
+	var s := Progress.streak()
+	streak_value.text = str(s.streak)
+	streak_longest.text = "longest %d" % int(s.longest)
+	for child in week_host.get_children():
+		week_host.remove_child(child)
+		child.queue_free()
+	week_host.add_child(UI.week_row(s.week, s.token))
 	var solved: int = Progress.solved().keys().filter(func(id: String) -> bool: return Bank.has_problem(id)).size()
 	var runs := Progress.runs_completed()
 	streak_note.text = "%d problem%s solved · level %d · %d full run%s" % [solved, "" if solved == 1 else "s", Progress.level(), runs, "" if runs == 1 else "s"]

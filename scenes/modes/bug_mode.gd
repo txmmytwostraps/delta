@@ -1,11 +1,13 @@
 extends VBoxContainer
-## Fix the bug: a working solution with one small change planted in it.
-## Tap a line to see other ways to write it, and pick one. The judge decides.
+## Fix the bug: a working solution with one small change planted in it, in
+## one block of code. Tap a line to see other ways to write it, and pick
+## one. The judge decides.
 
 signal changed
 signal instruction_changed
 
 const MENU_SIZE := 8
+const OPEN := Color("#7ef0c2", 0.12)
 
 ## What the bug is, for the hint ("an operator", ...). "" until setup found one.
 var kind := ""
@@ -17,23 +19,33 @@ var _original: Array = []    # the solution
 var _open := -1              # the line whose menu is open
 
 
-## Finds a bug that compiles and fails a test, like the site: the first
-## candidate the judge rejects. Returns false when none exists.
-func setup(problem: Dictionary) -> bool:
-	_problem = problem
-	_original = Array(str(problem.solution).split("\n"))
+## Finds the bug for a problem, like the site: the first candidate that
+## compiles and fails a test. {} when none exists. Slow (a few judge runs),
+## so callers keep the answer.
+static func find(problem: Dictionary) -> Dictionary:
 	for c in Modes.candidates(str(problem.solution), str(problem.id)).slice(0, 12):
 		var reply: Dictionary = await Grader.run(c.code, problem)
-		if not is_inside_tree():
-			return false
 		var result: Dictionary = reply.result
 		if result.status == "ok" and int(result.passed) < int(result.total):
-			kind = c.kind
-			_start = Array(str(c.code).split("\n"))
-			_lines = _start.duplicate()
-			render()
-			return true
-	return false
+			return c
+	return {}
+
+
+## found: the bug from find(), or {} to look it up now. Returns false when
+## there is none.
+func setup(problem: Dictionary, found: Dictionary = {}) -> bool:
+	_problem = problem
+	_original = Array(str(problem.solution).split("\n"))
+	var c := found
+	if c.is_empty():
+		c = await find(problem)
+	if c.is_empty() or not is_inside_tree():
+		return false
+	kind = c.kind
+	_start = Array(str(c.code).split("\n"))
+	_lines = _start.duplicate()
+	render()
+	return true
 
 
 func instruction() -> String:
@@ -56,20 +68,35 @@ func render() -> void:
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
-	add_theme_constant_override("separation", 16)
+	var parts := UI.code_block()
+	parts.rows.add_theme_constant_override("separation", 8)
 	for i in _lines.size():
-		add_child(_row(i))
+		parts.rows.add_child(_row(i))
 		if i == _open:
-			add_child(_menu(i))
+			parts.rows.add_child(_menu(i))
+	add_child(parts.block)
 	instruction_changed.emit()
 
 
 func _row(i: int) -> Control:
-	var parts := UI.code_card(_lines[i], i == _open, _lines[i] != _start[i])
-	parts.card.add_child(UI.tap_area(func() -> void:
+	var holder := PanelContainer.new()
+	var box := StyleBoxFlat.new()
+	box.bg_color = OPEN if i == _open else Color(0, 0, 0, 0)
+	box.content_margin_top = 8
+	box.content_margin_bottom = 8
+	box.content_margin_left = 4
+	box.content_margin_right = 4
+	holder.add_theme_stylebox_override("panel", box)
+	holder.custom_minimum_size.y = 88
+	var parts := UI.code_line(i + 1, _lines[i], false, false)
+	if _lines[i] != _start[i]:
+		# A line the user changed: marked at its number.
+		parts.row.get_child(0).theme_type_variation = &"Accent"
+	holder.add_child(parts.row)
+	holder.add_child(UI.tap_area(func() -> void:
 		_open = -1 if _open == i else i
 		render()))
-	return parts.card
+	return holder
 
 
 ## The replacements for line i: every one-step change, the fix among them,
@@ -94,7 +121,7 @@ func options_for(i: int) -> Array:
 
 func _menu(i: int) -> Control:
 	var menu := VBoxContainer.new()
-	menu.add_theme_constant_override("separation", 16)
+	menu.add_theme_constant_override("separation", 8)
 	var options := options_for(i)
 	if options.is_empty():
 		var none := Label.new()
@@ -102,7 +129,7 @@ func _menu(i: int) -> Control:
 		none.text = "Nothing to change on this line."
 		menu.add_child(none)
 	for option in options:
-		var button := UI.row("→ " + str(option).lstrip("\t"), "", false, true)
+		var button := UI.choice(str(option).lstrip("\t"))
 		button.pressed.connect(func() -> void: _apply(i, option))
 		menu.add_child(button)
 	var leave := Button.new()

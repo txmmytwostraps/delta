@@ -1,11 +1,14 @@
 extends VBoxContainer
-## Put the lines in order: the solution's lines, shuffled. Tap a line, then
-## tap where it should go; or use the arrows. Indentation stays with each
-## line and is shown as guides. The assembled code goes through the judge.
+## Put the lines in order: the solution's lines, shuffled, in one block of
+## code. Each line has a grip on the left and arrows on the right. Tap a
+## line, then tap where it should go; or use the arrows. The assembled code
+## goes through the judge.
 
 signal changed
 ## The text for the instruction area changed (a line was picked up or put down).
 signal instruction_changed
+
+const SELECTED := Color("#7ef0c2", 0.12)
 
 var _lines: Array = []
 var _start: Array = []
@@ -38,23 +41,31 @@ func render() -> void:
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
-	add_theme_constant_override("separation", 16)
+	var parts := UI.code_block()
+	parts.rows.add_theme_constant_override("separation", 8)
 	for i in _lines.size():
-		add_child(_row(i))
+		parts.rows.add_child(_row(i))
+	add_child(parts.block)
 	instruction_changed.emit()
 
 
 func _row(i: int) -> Control:
-	var parts := UI.code_card(_lines[i], i == _selected)
-	var right: VBoxContainer = parts.right
-	right.add_theme_constant_override("separation", 0)
-	var arrows := HBoxContainer.new()
-	arrows.add_theme_constant_override("separation", 0)
-	arrows.add_child(_arrow("▲", i > 0, func() -> void: _move(i, i - 1)))
-	arrows.add_child(_arrow("▼", i < _lines.size() - 1, func() -> void: _move(i, i + 1)))
-	right.add_child(arrows)
-	parts.card.add_child(UI.tap_area(func() -> void: _tap(i), 176))
-	return parts.card
+	var holder := PanelContainer.new()
+	var box := StyleBoxFlat.new()
+	box.bg_color = SELECTED if i == _selected else Color(0, 0, 0, 0)
+	box.content_margin_top = 8
+	box.content_margin_bottom = 8
+	box.content_margin_left = 4
+	box.content_margin_right = 4
+	holder.add_theme_stylebox_override("panel", box)
+	holder.custom_minimum_size.y = 88
+	var parts := UI.code_line(i + 1, _lines[i], true, i == _selected)
+	var row: HBoxContainer = parts.row
+	row.add_child(_arrow("▲", i > 0, func() -> void: _move(i, i - 1)))
+	row.add_child(_arrow("▼", i < _lines.size() - 1, func() -> void: _move(i, i + 1)))
+	holder.add_child(row)
+	holder.add_child(UI.tap_area(func() -> void: _tap(i), 176))
+	return holder
 
 
 func _arrow(glyph: String, enabled: bool, on_press: Callable) -> Button:

@@ -6,6 +6,8 @@ const DAYS := ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY",
 
 @onready var dateline: Label = $Scroll/Body/Dateline
 @onready var count: Label = $Scroll/Body/Count
+@onready var streak_label: Label = $Scroll/Body/StreakRow/StreakLabel
+@onready var week_host: VBoxContainer = $Scroll/Body/StreakRow/WeekHost
 @onready var slots: VBoxContainer = $Scroll/Body/Slots
 @onready var done_day: Label = $Scroll/Body/DoneDay
 @onready var new_label: Label = $Scroll/Body/NewLabel
@@ -34,6 +36,10 @@ func render() -> void:
 	var runs := Progress.runs_completed()
 	count.text = "%d / 3 today · %d min · %d run%s done" % [status.done_count, Progress.minutes_today(), runs, "" if runs == 1 else "s"]
 	done_day.visible = status.all_done
+	var s := Progress.streak()
+	streak_label.text = "STREAK %d" % int(s.streak)
+	_clear(week_host)
+	week_host.add_child(UI.week_row(s.week, s.token))
 
 	_clear(slots)
 	var active_index := -1

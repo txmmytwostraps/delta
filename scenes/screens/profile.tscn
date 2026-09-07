@@ -61,10 +61,23 @@ layout_mode = 2
 theme_type_variation = &"Small"
 text = "DAY STREAK"
 
-[node name="Value" type="Label" parent="Scroll/Body/Streak/Column"]
+[node name="Numbers" type="HBoxContainer" parent="Scroll/Body/Streak/Column"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Value" type="Label" parent="Scroll/Body/Streak/Column/Numbers"]
 layout_mode = 2
 theme_type_variation = &"Big"
 text = "…"
+
+[node name="Longest" type="Label" parent="Scroll/Body/Streak/Column/Numbers"]
+layout_mode = 2
+size_flags_vertical = 8
+theme_type_variation = &"Detail"
+text = "longest 0"
+
+[node name="WeekHost" type="VBoxContainer" parent="Scroll/Body/Streak/Column"]
+layout_mode = 2
 
 [node name="Note" type="Label" parent="Scroll/Body/Streak/Column"]
 layout_mode = 2
