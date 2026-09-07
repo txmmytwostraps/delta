@@ -71,6 +71,94 @@ layout_mode = 2
 theme_type_variation = &"Muted"
 autowrap_mode = 3
 
+[node name="Settings" type="PanelContainer" parent="Scroll/Body"]
+layout_mode = 2
+
+[node name="Column" type="VBoxContainer" parent="Scroll/Body/Settings"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Label" type="Label" parent="Scroll/Body/Settings/Column"]
+layout_mode = 2
+theme_type_variation = &"Small"
+text = "SETTINGS"
+
+[node name="SetSize" type="HBoxContainer" parent="Scroll/Body/Settings/Column"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SetSizeColumn" type="VBoxContainer" parent="Scroll/Body/Settings/Column/SetSize"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="SetSizeLabel" type="Label" parent="Scroll/Body/Settings/Column/SetSize/SetSizeColumn"]
+layout_mode = 2
+text = "New problems a day"
+
+[node name="SetSizeValue" type="Label" parent="Scroll/Body/Settings/Column/SetSize/SetSizeColumn"]
+layout_mode = 2
+theme_type_variation = &"Heading3"
+text = "5"
+
+[node name="SetSizeNote" type="Label" parent="Scroll/Body/Settings/Column/SetSize/SetSizeColumn"]
+layout_mode = 2
+theme_type_variation = &"Detail"
+text = "The site uses 5. Another number here changes the phone's set."
+autowrap_mode = 3
+
+[node name="SizeLess" type="Button" parent="Scroll/Body/Settings/Column/SetSize"]
+custom_minimum_size = Vector2(88, 88)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 1
+text = "−"
+
+[node name="SizeMore" type="Button" parent="Scroll/Body/Settings/Column/SetSize"]
+custom_minimum_size = Vector2(88, 88)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 1
+text = "+"
+
+[node name="Reminder" type="HBoxContainer" parent="Scroll/Body/Settings/Column"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ReminderColumn" type="VBoxContainer" parent="Scroll/Body/Settings/Column/Reminder"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="ReminderLabel" type="Label" parent="Scroll/Body/Settings/Column/Reminder/ReminderColumn"]
+layout_mode = 2
+text = "Review reminder"
+
+[node name="ReminderValue" type="Label" parent="Scroll/Body/Settings/Column/Reminder/ReminderColumn"]
+layout_mode = 2
+theme_type_variation = &"Heading3"
+text = "19:00"
+
+[node name="ReminderNote" type="Label" parent="Scroll/Body/Settings/Column/Reminder/ReminderColumn"]
+layout_mode = 2
+theme_type_variation = &"Detail"
+text = "One notification a day at most, when reviews are due or the run is not done. Reminders arrive with a later build."
+autowrap_mode = 3
+
+[node name="TimeLess" type="Button" parent="Scroll/Body/Settings/Column/Reminder"]
+custom_minimum_size = Vector2(88, 88)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 1
+text = "−"
+
+[node name="TimeMore" type="Button" parent="Scroll/Body/Settings/Column/Reminder"]
+custom_minimum_size = Vector2(88, 88)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 1
+text = "+"
+
 [node name="Sync" type="PanelContainer" parent="Scroll/Body"]
 layout_mode = 2
 

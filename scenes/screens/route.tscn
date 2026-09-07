@@ -1,12 +1,14 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/screens/screen_header.tscn" id="1"]
+[ext_resource type="Script" path="res://scenes/screens/route.gd" id="2"]
 
 [node name="Route" type="MarginContainer"]
 theme_override_constants/margin_left = 40
 theme_override_constants/margin_top = 48
 theme_override_constants/margin_right = 40
 theme_override_constants/margin_bottom = 0
+script = ExtResource("2")
 
 [node name="Scroll" type="ScrollContainer" parent="."]
 layout_mode = 2
@@ -16,15 +18,99 @@ horizontal_scroll_mode = 0
 [node name="Body" type="VBoxContainer" parent="Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 28
+theme_override_constants/separation = 48
 
 [node name="Header" parent="Scroll/Body" instance=ExtResource("1")]
 layout_mode = 2
 eyebrow = "The course"
 title = "Route"
 
-[node name="Placeholder" type="Label" parent="Scroll/Body"]
+[node name="Position" type="PanelContainer" parent="Scroll/Body"]
 layout_mode = 2
-theme_type_variation = &"Dim"
-text = "The path through the topics will appear here."
+
+[node name="PositionColumn" type="VBoxContainer" parent="Scroll/Body/Position"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PosLabel" type="Label" parent="Scroll/Body/Position/PositionColumn"]
+layout_mode = 2
+theme_type_variation = &"Small"
+text = "WHERE YOU ARE"
+
+[node name="PosTitle" type="Label" parent="Scroll/Body/Position/PositionColumn"]
+layout_mode = 2
+theme_type_variation = &"Heading3"
+text = "—"
 autowrap_mode = 3
+
+[node name="Bar" type="HBoxContainer" parent="Scroll/Body/Position/PositionColumn"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Done" type="ColorRect" parent="Scroll/Body/Position/PositionColumn/Bar"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.0
+color = Color(0.494118, 0.941176, 0.760784, 1)
+
+[node name="Left" type="ColorRect" parent="Scroll/Body/Position/PositionColumn/Bar"]
+layout_mode = 2
+size_flags_horizontal = 3
+color = Color(0.109804, 0.133333, 0.160784, 1)
+
+[node name="PosDetail" type="Label" parent="Scroll/Body/Position/PositionColumn"]
+layout_mode = 2
+theme_type_variation = &"Detail"
+autowrap_mode = 3
+
+[node name="Lock" type="PanelContainer" parent="Scroll/Body"]
+layout_mode = 2
+
+[node name="LockRow" type="HBoxContainer" parent="Scroll/Body/Lock"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LockColumn" type="VBoxContainer" parent="Scroll/Body/Lock/LockRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="LockLabel" type="Label" parent="Scroll/Body/Lock/LockRow/LockColumn"]
+layout_mode = 2
+theme_type_variation = &"Small"
+text = "COURSE · THROUGH LESSON"
+autowrap_mode = 3
+
+[node name="LockValue" type="Label" parent="Scroll/Body/Lock/LockRow/LockColumn"]
+layout_mode = 2
+theme_type_variation = &"Heading3"
+text = "20"
+
+[node name="LockNote" type="Label" parent="Scroll/Body/Lock/LockRow/LockColumn"]
+layout_mode = 2
+theme_type_variation = &"Detail"
+text = "Topics past this stay locked until you reach them in the course."
+autowrap_mode = 3
+
+[node name="Less" type="Button" parent="Scroll/Body/Lock/LockRow"]
+custom_minimum_size = Vector2(88, 88)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 1
+text = "−"
+
+[node name="More" type="Button" parent="Scroll/Body/Lock/LockRow"]
+custom_minimum_size = Vector2(88, 88)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 1
+text = "+"
+
+[node name="Path" type="VBoxContainer" parent="Scroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Bottom" type="Control" parent="Scroll/Body"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2

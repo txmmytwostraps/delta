@@ -31,7 +31,8 @@ func render() -> void:
 
 	var status := Progress.run_status()
 	var run: Dictionary = status.run
-	count.text = "%d / 3 today" % status.done_count
+	var runs := Progress.runs_completed()
+	count.text = "%d / 3 today · %d min · %d run%s done" % [status.done_count, Progress.minutes_today(), runs, "" if runs == 1 else "s"]
 	done_day.visible = status.all_done
 
 	_clear(slots)
@@ -111,13 +112,13 @@ func _slot(slot: Dictionary, active: bool) -> Control:
 
 	# A tap on the slot opens its first problem; a drag still scrolls.
 	if not slot.done and slot.get("first_id", null) != null:
-		var tap := Button.new()
-		tap.flat = true
-		tap.mouse_filter = Control.MOUSE_FILTER_PASS
-		tap.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		for box_name in ["normal", "hover", "pressed", "focus"]:
-			tap.add_theme_stylebox_override(box_name, StyleBoxEmpty.new())
-		tap.pressed.connect(func() -> void: _open(slot.first_id, slot.kind == "review"))
+		var tap := UI.tap_area(func() -> void:
+			if slot.first_id == "cards":
+				var app := get_tree().get_first_node_in_group("app")
+				if app:
+					app.open_flashcards(true, -1)
+			else:
+				_open(slot.first_id, slot.kind == "review"), 0)
 		panel.add_child(tap)
 	return panel
 
