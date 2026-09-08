@@ -52,18 +52,18 @@ func _item() -> Dictionary:
 @onready var prompt: Label = $Margin/Column/Body/Side/SideColumn/Prompt
 @onready var hints: VBoxContainer = $Margin/Column/Body/Side/SideColumn/Hints
 @onready var docs: VBoxContainer = $Margin/Column/Body/Side/SideColumn/Docs
-@onready var solution_toggle: Button = $Margin/Column/Body/Side/SideColumn/SolutionToggle
-@onready var solution: Label = $Margin/Column/Body/Side/SideColumn/Solution
 @onready var keys: HFlowContainer = $Margin/Column/Keys
 
 var results := ResultsPanel.new()
 ## The verdict after a run, over the bottom of the screen; see VerdictPanel.
 var verdict: VerdictPanel
-var _nudge_button: Button
-var _nudge_note: Label
-var _nudge_reply: Label
-var _nudge_text := ""
+## Help: the nudge, the hints ladder and the reference solution.
+var help: HelpPanel
 var _last_reply: Dictionary = {}
+## The collapsed prompt's text: a Label so it can wrap and be cut off after
+## three lines, which a Button's own text cannot do.
+var _prompt_text: Label
+var _prompt_opened := false
 var _save_timer: Timer
 var _marked := -1
 var _loading := true
@@ -87,7 +87,6 @@ func _ready() -> void:
 	back.pressed.connect(close)
 	run_button.pressed.connect(_on_run)
 	reset_button.pressed.connect(_on_reset)
-	solution_toggle.pressed.connect(_toggle_solution)
 	side.add_child(results)
 	results.clear()
 	verdict = VerdictPanel.attach(self)
@@ -102,17 +101,19 @@ func _ready() -> void:
 	verdict.hint_pressed.connect(func() -> void:
 		_after_verdict()
 		results.visible = true
-		_open_next_hint()
+		help.open_next()
 		_show_side())
 	next_button.pressed.connect(_go_next)
 
 	_setup_code()
-	_render_hints(p)
+	# A milestone step and a drill have no hints of their own, and no nudge.
+	help = HelpPanel.new()
+	hints.add_child(help)
+	var own := step_milestone == "" and variant.is_empty()
+	help.setup(p, func() -> String: return code.text, func() -> Dictionary: return _last_reply, own, own)
 	_render_docs(p)
 	if step_milestone != "":
 		# The stage first in the side column; it follows the code as it is typed.
-		solution_toggle.visible = false
-		solution.visible = false
 		var scene: Dictionary = Bank.milestone_data(step_milestone).get("scene", {})
 		_stage = StagePanel.new()
 		_stage.setup(str(scene.get("kind", "move")), scene.get("watch", []), func() -> String: return code.text)
@@ -128,11 +129,6 @@ func _ready() -> void:
 			if not _loading:
 				_stage_timer.start())
 		_stage.reset()
-	elif not variant.is_empty():
-		solution_toggle.visible = false
-		solution.visible = false
-	else:
-		_render_solution_lock(p)
 
 	_save_timer = Timer.new()
 	_save_timer.one_shot = true
@@ -154,9 +150,25 @@ func _ready() -> void:
 		button.pressed.connect(func() -> void: _insert("\t" if k == "Tab" else k))
 		keys.add_child(button)
 
+	prompt_line.text = ""
+	_prompt_text = Label.new()
+	_prompt_text.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_prompt_text.offset_left = 16
+	_prompt_text.offset_right = -16
+	_prompt_text.offset_top = 10
+	_prompt_text.offset_bottom = -10
+	_prompt_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_prompt_text.theme_type_variation = &"Prose"
+	_prompt_text.add_theme_color_override("font_color", Color("#7ef0c2"))
+	_prompt_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_prompt_text.max_lines_visible = 3
+	_prompt_text.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	prompt_line.add_child(_prompt_text)
+	_prompt_text.resized.connect(func() -> void:
+		prompt_line.custom_minimum_size.y = maxf(72.0, _prompt_text.get_minimum_size().y + 28.0))
 	prompt_line.pressed.connect(func() -> void:
 		drawer.visible = not drawer.visible
-		prompt_line.text = ("▾ " if drawer.visible else "▸ ") + prompt_line.text.substr(2))
+		_render_prompt_line())
 	var app := get_tree().get_first_node_in_group("app")
 	if app:
 		app.set_editor_open(true)
@@ -186,7 +198,16 @@ func _layout() -> void:
 			drawer.add_child(column)
 		side_scroll.visible = false
 		prompt_line.visible = true
-		prompt_line.text = ("▾ " if drawer.visible else "▸ ") + str(_item().get("prompt", "")).replace("`", "").replace("\n", " ")
+		# The goal is read before the keyboard covers it: the first time a
+		# problem is opened on this phone, the drawer opens by itself.
+		if not _prompt_opened:
+			_prompt_opened = true
+			var seen := Store.section("prompt_seen")
+			if not bool(seen.get(problem_id, false)):
+				seen[problem_id] = true
+				Store.save()
+				drawer.visible = true
+		_render_prompt_line()
 	else:
 		if column.get_parent() != side_scroll:
 			column.get_parent().remove_child(column)
@@ -196,10 +217,23 @@ func _layout() -> void:
 		drawer.visible = false
 
 
+## The collapsed prompt: three lines of the goal, then an ellipsis. While
+## the drawer is open the goal is in it, so the header is one line saying so
+## rather than the same words twice.
+func _render_prompt_line() -> void:
+	if _prompt_text == null:
+		return
+	if drawer.visible:
+		_prompt_text.text = "Goal ▾"
+		return
+	_prompt_text.text = "▸ " + str(_item().get("prompt", "")).replace("`", "").replace("\n", " ")
+
+
 ## After a run in portrait the drawer opens so the result is seen.
 func _show_side() -> void:
 	if prompt_line.visible and not drawer.visible:
-		prompt_line.pressed.emit()
+		drawer.visible = true
+		_render_prompt_line()
 	drawer.scroll_vertical = 0
 
 
@@ -263,72 +297,6 @@ func _mark_error(line: int) -> void:
 
 # ---- hints, docs, the solution ----
 
-## Staged hints. Which may open depends on the topic's hint level and the
-## misses on this problem; locked ones say what unlocks them. Opening a
-## hint never counts as a miss, but it is logged for the weekly summary.
-func _render_hints(p: Dictionary) -> void:
-	for child in hints.get_children():
-		hints.remove_child(child)
-		child.queue_free()
-	var list: Array = p.get("hints", [])
-	if list.is_empty() and p.has("hint"):
-		list = [p.hint]
-	var level := Scaffold.level_for(str(p.get("concept", "")))
-	var misses := int(Progress.fails().get(problem_id, 0))
-	if step_milestone == "" and variant.is_empty():
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 12)
-		_nudge_button = Button.new()
-		_nudge_button.custom_minimum_size.y = 72
-		_nudge_button.mouse_filter = Control.MOUSE_FILTER_PASS
-		_nudge_button.text = "NUDGE"
-		_nudge_button.pressed.connect(_ask_nudge)
-		row.add_child(_nudge_button)
-		_nudge_note = Label.new()
-		_nudge_note.theme_type_variation = &"Detail"
-		_nudge_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_nudge_note.clip_text = true
-		_nudge_note.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		_nudge_note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		row.add_child(_nudge_note)
-		hints.add_child(row)
-		_nudge_reply = Label.new()
-		_nudge_reply.theme_type_variation = &"Prose"
-		_nudge_reply.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_nudge_reply.visible = _nudge_text != ""
-		_nudge_reply.text = _nudge_text
-		hints.add_child(_nudge_reply)
-	for i in list.size():
-		var open := Scaffold.hint_open(level, i, misses) or Progress.is_solved(problem_id)
-		var button := Button.new()
-		button.theme_type_variation = &"Link"
-		button.custom_minimum_size.y = 72
-		button.mouse_filter = Control.MOUSE_FILTER_PASS
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.clip_text = true
-		button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		button.text = "[+] HINT %d OF %d" % [i + 1, list.size()] if open else "[#] HINT %d OF %d — %s" % [i + 1, list.size(), Scaffold.hint_lock_text(level).to_upper()]
-		button.disabled = not open
-		var text := Label.new()
-		text.theme_type_variation = &"Prose"
-		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		text.text = str(list[i]).replace("`", "")
-		text.visible = false
-		button.pressed.connect(func() -> void:
-			text.visible = not text.visible
-			button.text = ("[-] " if text.visible else "[+] ") + button.text.substr(4)
-			if text.visible:
-				Week.log_hint(problem_id, i))
-		hints.add_child(button)
-		hints.add_child(text)
-	if list.size() > 0:
-		var line := Label.new()
-		line.theme_type_variation = &"Small"
-		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		line.text = "HINTS: %s%s · CHANGE ON THE ROUTE" % [level.to_upper(), " (SET BY HAND)" if Scaffold.override_for(str(p.get("concept", ""))) != "" else ""]
-		hints.add_child(line)
-
-
 func _render_docs(p: Dictionary) -> void:
 	var list: Array = p.get("docs", [])
 	if list.is_empty():
@@ -342,27 +310,6 @@ func _render_docs(p: Dictionary) -> void:
 		row.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		row.text = "%s — %s" % [str(d.get("name", "")), str(d.get("what", ""))]
 		docs.add_child(row)
-
-
-func _render_solution_lock(p: Dictionary) -> void:
-	var misses := int(Progress.fails().get(problem_id, 0))
-	var after := Submission.unlock_after(p)
-	var unlocked := Progress.is_solved(problem_id) or misses >= after
-	solution.text = str(p.get("solution", "")).replace("\t", "    ")
-	if unlocked:
-		solution_toggle.text = ("[-] " if solution.visible else "[+] ") + "REFERENCE SOLUTION"
-	else:
-		var left := after - misses
-		solution.visible = false
-		solution_toggle.text = "[#] REFERENCE SOLUTION — LOCKED · %d MORE MISS%s TO UNLOCK" % [left, "" if left == 1 else "ES"]
-
-
-func _toggle_solution() -> void:
-	var misses := int(Progress.fails().get(problem_id, 0))
-	if not (Progress.is_solved(problem_id) or misses >= Submission.unlock_after(_item())):
-		return
-	solution.visible = not solution.visible
-	_render_solution_lock(_item())
 
 
 # ---- running ----
@@ -407,49 +354,10 @@ func _on_run() -> void:
 ## the error line marked, the stage, the hint and solution locks.
 func _after_verdict() -> void:
 	_mark_error(results.error_line)
-	var p := _item()
 	if step_milestone != "":
 		_stage.refresh()
-	elif variant.is_empty():
-		_render_solution_lock(p)
-		_render_hints(p)
-
-
-## The built-in nudge, as on the problem page: the code as typed, the
-## failing checks and the hints opened go to the site's function.
-func _ask_nudge() -> void:
-	var p := _item()
-	var why := Nudge.blocked_reason(p)
-	if why != "":
-		_nudge_note.text = why
-		return
-	_nudge_button.disabled = true
-	_nudge_note.text = "thinking…"
-	var opened := []
-	for child in hints.get_children():
-		if child is Button and child.text.begins_with("[-]"):
-			var i := int(child.text.substr(9, 2).strip_edges()) - 1
-			if i >= 0 and i < p.get("hints", []).size():
-				opened.append(str(p.hints[i]))
-	var reply: Dictionary = await Nudge.ask(Nudge.payload(p, code.text, _last_reply, opened))
-	if not is_inside_tree():
-		return
-	_nudge_button.disabled = false
-	if reply.ok:
-		_nudge_text = "Nudge · " + reply.text
-		_nudge_reply.text = _nudge_text
-		_nudge_reply.visible = true
-		_nudge_note.text = "%d left today" % reply.remaining if reply.remaining >= 0 else ""
 	else:
-		_nudge_note.text = reply.error
-
-
-## Opens the first hint that may open and is still closed.
-func _open_next_hint() -> void:
-	for child in hints.get_children():
-		if child is Button and not child.disabled and child.text.begins_with("[+]"):
-			child.pressed.emit()
-			return
+		help.render()
 
 
 ## Next ›: the next step of the milestone, or the next problem.

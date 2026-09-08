@@ -243,6 +243,26 @@ func _init() -> void:
 	# An amber tile across the route: a milestone.
 	theme.set_type_variation("Tile", "PanelContainer")
 	theme.set_stylebox("panel", "Tile", _box(Color("#3d3220"), MILESTONE, 2, 24, 20))
+	# The Help panel: a bordered button to ask for a nudge, the reply under it
+	# in a panel with an accent bar, and the numbered squares of the ladder.
+	theme.set_type_variation("Bordered", "Button")
+	_font_of(theme, "Bordered", mono, 26)
+	for box_state in ["normal", "pressed", "disabled"]:
+		theme.set_stylebox(box_state, "Bordered", _box(CLEAR, LINE_STRONG, 2, 24, 20))
+	theme.set_stylebox("hover", "Bordered", _box(CLEAR, ACCENT, 2, 24, 20))
+	theme.set_stylebox("focus", "Bordered", StyleBoxEmpty.new())
+	for color_name in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
+		theme.set_color(color_name, "Bordered", TEXT)
+	theme.set_color("font_disabled_color", "Bordered", DIM)
+	theme.set_type_variation("Quote", "PanelContainer")
+	var quote := _box(BG, ACCENT, 0, 24, 20)
+	quote.border_width_left = 6
+	theme.set_stylebox("panel", "Quote", quote)
+	theme.set_type_variation("Square", "PanelContainer")
+	theme.set_stylebox("panel", "Square", _box(CLEAR, LINE_STRONG, 2, 0, 0))
+	theme.set_type_variation("SquareOn", "PanelContainer")
+	theme.set_stylebox("panel", "SquareOn", _box(ACCENT, ACCENT, 2, 0, 0))
+
 	# A page that sits over a screen and hides it.
 	theme.set_type_variation("Backdrop", "PanelContainer")
 	theme.set_stylebox("panel", "Backdrop", _box(BG, BG, 0, 0, 0))

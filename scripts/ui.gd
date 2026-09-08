@@ -399,3 +399,114 @@ static func link(text: String, on_press: Callable) -> Button:
 	button.text = text
 	button.pressed.connect(on_press)
 	return button
+
+
+## An answer to pick whose text is more than one line: the radio marker,
+## then the lines stacked in a block, never joined onto one line (printed
+## output reads the way the results panel writes it).
+## state: "" | "on" | "right" | "wrong".
+static func choice_block(lines: Array, state: String = "") -> Button:
+	var button := Button.new()
+	button.theme_type_variation = {"": &"Choice", "on": &"ChoiceOn", "right": &"ChoiceRight", "wrong": &"ChoiceWrong"}[state]
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.mouse_filter = Control.MOUSE_FILTER_PASS
+	var row := HBoxContainer.new()
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 24
+	row.offset_right = -24
+	row.offset_top = 16
+	row.offset_bottom = -16
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 16)
+	button.add_child(row)
+	var marker := Label.new()
+	marker.text = "○" if state == "" else "●"
+	marker.theme_type_variation = &"Code"
+	marker.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if state == "right" or state == "wrong":
+		marker.add_theme_color_override("font_color", Color("#0b0d10"))
+	row.add_child(marker)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 2)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(column)
+	for line in lines:
+		var text := Label.new()
+		text.theme_type_variation = &"Code"
+		text.text = str(line)
+		text.clip_text = true
+		text.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if state == "right" or state == "wrong":
+			text.add_theme_color_override("font_color", Color("#0b0d10"))
+		elif str(line).begins_with("…"):
+			text.theme_type_variation = &"Dim"
+		column.add_child(text)
+	# The button grows with the stack.
+	column.resized.connect(func() -> void:
+		button.custom_minimum_size.y = maxf(96.0, column.get_minimum_size().y + 32.0))
+	button.custom_minimum_size.y = maxf(96.0, 40.0 * lines.size() + 32.0)
+	return button
+
+
+## One rung of the hints ladder: a square on the left holding its number (a
+## filled ✓ once opened), the name in sentence case, and the state on the
+## right — "open ›" in accent for the one that may open next, "opened", or
+## the reason it is locked, dimmed.
+## state: "open" | "opened" | "locked".
+static func help_row(square: String, title: String, state_text: String, state: String) -> Button:
+	var button := Button.new()
+	button.theme_type_variation = &"Row"
+	button.custom_minimum_size.y = 96
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.mouse_filter = Control.MOUSE_FILTER_PASS
+	button.disabled = state == "locked"
+	var box := HBoxContainer.new()
+	box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	box.offset_left = 4
+	box.offset_right = -4
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_theme_constant_override("separation", 20)
+	button.add_child(box)
+
+	var sq := PanelContainer.new()
+	sq.theme_type_variation = &"SquareOn" if state == "opened" else &"Square"
+	sq.custom_minimum_size = Vector2(44, 44)
+	sq.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	sq.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var glyph := Label.new()
+	glyph.text = square
+	glyph.theme_type_variation = &"Detail"
+	glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if state == "opened":
+		glyph.add_theme_color_override("font_color", Color("#0b0d10"))
+	sq.add_child(glyph)
+	box.add_child(sq)
+
+	var text := Label.new()
+	text.text = title
+	text.clip_text = true
+	text.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if state == "locked":
+		text.theme_type_variation = &"Muted"
+	box.add_child(text)
+
+	if state_text != "":
+		var note := Label.new()
+		note.text = state_text
+		note.theme_type_variation = &"Detail"
+		note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if state == "open":
+			note.add_theme_color_override("font_color", Color("#7ef0c2"))
+		elif state == "locked":
+			note.add_theme_color_override("font_color", DIM)
+		box.add_child(note)
+	return button

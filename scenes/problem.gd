@@ -1,16 +1,19 @@
 extends PanelContainer
-## One problem, in one of the tap modes: put the lines in order, fix the
-## bug, or say what it prints; or typed, in the editor (the ✎ button). One
-## default mode per problem: Print for print-style problems, Order
-## otherwise; "Other ways" opens the rest. Inside a run the bar across the
-## top says "Run · n of N". Run, a "?" for hints and ✎ live in the bottom
-## bar. Opened by App.open_problem(); Back closes it.
+## One problem, in one of the tap modes: fill in the blank, put the lines in
+## order, fix the bug, or say what it prints; or typed, in the editor (the ✎
+## button). The segmented control offers all four, dimming the ones this
+## problem has no version of; it opens on Blank when there is one, else
+## Print for print-style problems, else Order. Inside a run the bar across
+## the top says "Run · n of N". Run, a "?" for hints and ✎ live in the
+## bottom bar. Opened by App.open_problem(); Back closes it.
 
+const BlankMode := preload("res://scenes/modes/blank_mode.gd")
 const OrderMode := preload("res://scenes/modes/order_mode.gd")
 const BugMode := preload("res://scenes/modes/bug_mode.gd")
 const PrintMode := preload("res://scenes/modes/print_mode.gd")
-const MODES := ["order", "bug", "print"]
-const MODE_NAMES := {"order": "Order", "bug": "Bug", "print": "Print"}
+const MODES := ["blank", "order", "bug", "print"]
+const MODE_NAMES := {"blank": "Blank", "order": "Order", "bug": "Bug", "print": "Print"}
+const MODE_NOTES := {"blank": "fill in the blank", "order": "put the lines in order", "bug": "fix the planted bug", "print": "say what it prints"}
 
 var problem_id := ""
 ## Opened from the review slot: the first verdict decides the review.
@@ -26,6 +29,7 @@ var visit: Dictionary = {}
 @onready var title: Label = $Column/Scroll/Margin/Body/Head/Title
 @onready var status: Label = $Column/Scroll/Margin/Body/Head/Status
 @onready var prompt: Label = $Column/Scroll/Margin/Body/Head/Prompt
+@onready var segments: HBoxContainer = $Column/Scroll/Margin/Body/Work/Modes
 @onready var instruction_column: VBoxContainer = $Column/Scroll/Margin/Body/Work/InstructionColumn
 @onready var instruction_text: Label = $Column/Scroll/Margin/Body/Work/InstructionColumn/InstructionText
 @onready var preparing: Label = $Column/Scroll/Margin/Body/Work/Preparing
@@ -34,12 +38,7 @@ var visit: Dictionary = {}
 @onready var other_ways: Button = $Column/Scroll/Margin/Body/Work/ExpectRow/OtherWays
 @onready var other_menu: VBoxContainer = $Column/Scroll/Margin/Body/Work/OtherMenu
 @onready var hint_drawer: PanelContainer = $Column/HintDrawer
-@onready var nudge_button: Button = $Column/HintDrawer/HintColumn/NudgeRow/NudgeButton
-@onready var nudge_note: Label = $Column/HintDrawer/HintColumn/NudgeRow/NudgeNote
-@onready var nudge_reply: Label = $Column/HintDrawer/HintColumn/NudgeReply
-@onready var hint_label: Label = $Column/HintDrawer/HintColumn/HintLabel
-@onready var hint_text: Label = $Column/HintDrawer/HintColumn/HintText
-@onready var next_hint: Button = $Column/HintDrawer/HintColumn/HintRow/NextHint
+@onready var help_host: VBoxContainer = $Column/HintDrawer/HintColumn/Help
 @onready var close_hint: Button = $Column/HintDrawer/HintColumn/HintRow/CloseHint
 @onready var notes_drawer: PanelContainer = $Column/NotesDrawer
 @onready var note: TextEdit = $Column/NotesDrawer/NotesColumn/Note
@@ -61,9 +60,15 @@ var _loading := true
 var _switching := 0
 ## The last run, for Review and Hint once the panel has gone.
 var _last: Dictionary = {}
-var _hint_at := -1
+## Help: the nudge, the hints ladder and the reference solution.
+var help: HelpPanel
 var _bug_found: Variant = null   # null until probed; {} when there is none
+## Whether this problem has a Blank and a Print version. Blank is decided
+## from the solution's text alone, so it is known before anything runs.
+var _blank_ok := false
+var _print_ok := true
 var _in_run := false
+var _segment_group := ButtonGroup.new()
 
 
 func _ready() -> void:
@@ -79,13 +84,14 @@ func _ready() -> void:
 	back.pressed.connect(close)
 	run_button.pressed.connect(_on_run)
 	hint_button.pressed.connect(_toggle_hints)
-	next_hint.pressed.connect(func() -> void: _render_hint(true))
-	nudge_button.pressed.connect(_ask_nudge)
+	help = HelpPanel.new()
+	help_host.add_child(help)
+	help.setup(Bank.problem(problem_id), current_code, func() -> Dictionary: return _last.get("reply", {}))
 	close_hint.pressed.connect(func() -> void: hint_drawer.visible = false)
 	type_button.pressed.connect(_open_editor)
 	other_ways.pressed.connect(func() -> void:
 		other_menu.visible = not other_menu.visible
-		other_ways.text = "OTHER WAYS ▴" if other_menu.visible else "OTHER WAYS ▾")
+		other_ways.text = "MORE ▴" if other_menu.visible else "MORE ▾")
 	close_note.pressed.connect(_toggle_notes)
 
 	_save_timer = Timer.new()
@@ -104,13 +110,21 @@ func _ready() -> void:
 	Sync.state_changed.connect(_update_saved)
 	var app := _app()
 	_in_run = app != null and app.run_active and app.run_has(problem_id)
+	var p := Bank.problem(problem_id)
+	_blank_ok = not p.is_empty() and not Modes.blank_for(p, _lesson_names(p)).is_empty()
 	render()
 	_probe_modes()
 	set_mode(default_mode())
 
 
-## Modes a problem does not have are left out of the menu: a bug version
-## exists only when the judge can plant one.
+## The words the other problems of this topic use: a blank's wrong chips
+## come from the same lesson.
+func _lesson_names(p: Dictionary) -> Array:
+	return Modes.lesson_words(Bank.problems_in(str(p.get("concept", ""))), str(p.get("id", "")))
+
+
+## Modes a problem has no version of are dimmed, never hidden: a bug
+## version exists only when the judge can plant one.
 func _probe_modes() -> void:
 	var p := Bank.problem(problem_id)
 	var app := _app()
@@ -120,7 +134,7 @@ func _probe_modes() -> void:
 	if not is_inside_tree():
 		return
 	_bug_found = found
-	_render_menu()
+	_render_segments()
 	if found.is_empty() and mode == "bug":
 		set_mode("order")
 
@@ -154,7 +168,7 @@ func render() -> void:
 
 func _render_kicker() -> void:
 	var p := Bank.problem(problem_id)
-	kicker.text = "%s · %s" % [Bank.topic_title(str(p.get("concept", ""))).to_upper(), MODE_NAMES.get(mode, mode).to_upper()]
+	kicker.text = Bank.topic_title(str(p.get("concept", ""))).to_upper()
 
 
 func _render_status() -> void:
@@ -186,46 +200,69 @@ func _expected_line(p: Dictionary) -> String:
 	return "returns %s" % value
 
 
-## The other ways into the problem, as rows under "Other ways".
+## Whether this problem has a version of a mode. Bug is only known once the
+## judge has looked for one; until then it is offered.
+func _mode_available(name: String) -> bool:
+	match name:
+		"blank":
+			return _blank_ok
+		"bug":
+			return not (_bug_found is Dictionary and _bug_found.is_empty())
+		"print":
+			return _print_ok
+	return true
+
+
+## The segmented control: Blank · Order · Bug · Print, the ones this problem
+## has no version of dimmed.
+func _render_segments() -> void:
+	_clear(segments)
+	for m in MODES:
+		var seg := Button.new()
+		seg.theme_type_variation = &"Segment"
+		seg.custom_minimum_size.y = 80
+		seg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		seg.mouse_filter = Control.MOUSE_FILTER_PASS
+		seg.toggle_mode = true
+		seg.button_group = _segment_group
+		seg.button_pressed = m == mode
+		seg.disabled = not _mode_available(m)
+		seg.text = str(MODE_NAMES[m]).to_upper()
+		seg.pressed.connect(func() -> void:
+			if mode != m:
+				set_mode(m))
+		segments.add_child(seg)
+
+
+## What is left under "More": starting over, and the note. Type has the
+## pencil in the bottom bar.
 func _render_menu() -> void:
 	_clear(other_menu)
-	for m in MODES:
-		if m == mode:
-			continue
-		if m == "bug" and _bug_found is Dictionary and _bug_found.is_empty():
-			continue
-		var row := UI.list_row("", MODE_NAMES[m], {"order": "put the lines in order", "bug": "fix the planted bug", "print": "say what it prints"}[m])
-		row.pressed.connect(func() -> void:
-			other_menu.visible = false
-			other_ways.text = "OTHER WAYS ▾"
-			set_mode(m))
-		other_menu.add_child(row)
-	var typed := UI.list_row("", "Type", "write it yourself")
-	typed.pressed.connect(_open_editor)
-	other_menu.add_child(typed)
 	var reset := UI.list_row("", "Reset", "start this mode over")
 	reset.pressed.connect(func() -> void:
 		other_menu.visible = false
-		other_ways.text = "OTHER WAYS ▾"
+		other_ways.text = "MORE ▾"
 		_on_reset())
 	other_menu.add_child(reset)
 	var n := Notes.get_note(problem_id)
 	var note_row := UI.list_row("", "Note", "written" if str(n.get("text", "")).strip_edges() != "" else "what I don't get")
 	note_row.pressed.connect(func() -> void:
 		other_menu.visible = false
-		other_ways.text = "OTHER WAYS ▾"
+		other_ways.text = "MORE ▾"
 		_toggle_notes())
 	other_menu.add_child(note_row)
 
 
 # ---- modes ----
 
-## One default per problem: Print for print-style problems, Order for the
-## rest. A review alternates like the site: order on odd review steps, bug
-## on the others.
+## One default per problem: Blank when the problem has one, else Print for
+## print-style problems, else Order. A review alternates like the site:
+## order on odd review steps, bug on the others.
 func default_mode() -> String:
 	if review and Reviews.is_in_review(problem_id):
 		return "order" if int(Reviews.rows()[problem_id].get("step", 0)) % 2 == 1 else "bug"
+	if _blank_ok:
+		return "blank"
 	var p := Bank.problem(problem_id)
 	return "print" if Fmt.print_only(p) else "order"
 
@@ -242,6 +279,7 @@ func set_mode(name: String) -> void:
 	instruction_text.visible = true
 	instruction_text.text = "Preparing…"
 	_render_kicker()
+	_render_segments()
 	_render_menu()
 	_clear(mode_host)
 	_widget = null
@@ -252,6 +290,8 @@ func set_mode(name: String) -> void:
 	# tell when the page went away while it was waiting on the judge.
 	var widget: Control
 	match name:
+		"blank":
+			widget = BlankMode.new()
 		"order":
 			widget = OrderMode.new()
 		"bug":
@@ -264,7 +304,9 @@ func set_mode(name: String) -> void:
 		if _widget == widget and not results.visible:
 			instruction_text.text = widget.instruction())
 	var ok := true
-	if name == "order":
+	if name == "blank":
+		ok = widget.setup(p, _lesson_names(p))
+	elif name == "order":
 		widget.setup(p)
 	elif name == "bug":
 		var app := _app()
@@ -283,6 +325,10 @@ func set_mode(name: String) -> void:
 		widget.queue_free()
 		if name == "bug":
 			_bug_found = {}
+		elif name == "blank":
+			_blank_ok = false
+		elif name == "print":
+			_print_ok = false
 		if name != "order":
 			set_mode("order")
 		return
@@ -291,6 +337,10 @@ func set_mode(name: String) -> void:
 	instruction_text.text = widget.instruction()
 	if name == "print":
 		widget.changed.connect(func() -> void: run_button.disabled = widget.selected < 0 or widget.graded)
+		run_button.disabled = true
+	elif name == "blank":
+		# A chip has to be in the gap before there is code to run.
+		widget.changed.connect(func() -> void: run_button.disabled = widget.selected < 0)
 		run_button.disabled = true
 	else:
 		run_button.disabled = false
@@ -318,7 +368,7 @@ func _on_reset() -> void:
 	instruction_text.visible = true
 	if _widget:
 		instruction_text.text = _widget.instruction()
-	run_button.disabled = mode == "print"
+	run_button.disabled = mode == "print" or mode == "blank"
 
 
 # ---- running ----
@@ -400,82 +450,16 @@ func _show_review() -> void:
 	scroll.scroll_vertical = 0
 
 
-## Hint from the verdict panel: the checks, and the hint drawer.
+## Hint from the verdict panel: the checks, and the hint drawer with the
+## next hint opened.
 func _show_hint() -> void:
 	_show_review()
 	hint_drawer.visible = true
-	_render_hint(true)
+	help.open_next()
 
 
 func _toggle_hints() -> void:
 	hint_drawer.visible = not hint_drawer.visible
-	if hint_drawer.visible:
-		_render_hint(_hint_at < 0)
-		_refresh_nudge_count()
-
-
-## "29 left today": the cap counted from the account's nudges.
-func _refresh_nudge_count() -> void:
-	if not Auth.is_signed_in():
-		nudge_note.text = "sign in to use"
-		return
-	var left: int = await Nudge.left_today()
-	if is_inside_tree() and left >= 0:
-		nudge_note.text = "%d left today" % maxi(0, left)
-
-
-## The built-in nudge: the problem, the code and the failing checks go to
-## the site's function; it points, never answers. Counts as a hint opened.
-func _ask_nudge() -> void:
-	var p := Bank.problem(problem_id)
-	var why := Nudge.blocked_reason(p)
-	if why != "":
-		nudge_note.text = why
-		return
-	nudge_button.disabled = true
-	nudge_note.text = "thinking…"
-	var opened := []
-	if _hint_at >= 0:
-		for i in _hint_at + 1:
-			opened.append(str(p.get("hints", [])[i]) if i < p.get("hints", []).size() else "")
-	var reply: Dictionary = await Nudge.ask(Nudge.payload(p, current_code(), _last.get("reply", {}), opened))
-	if not is_inside_tree():
-		return
-	nudge_button.disabled = false
-	if reply.ok:
-		nudge_reply.text = "Nudge · " + reply.text
-		nudge_reply.visible = true
-		nudge_note.text = "%d left today" % reply.remaining if reply.remaining >= 0 else ""
-	else:
-		nudge_note.text = reply.error
-
-
-## The hint drawer: the next hint that may open at this topic's level.
-## Each Next opens one more; a locked one says what opens it.
-func _render_hint(advance: bool) -> void:
-	var p := Bank.problem(problem_id)
-	var list: Array = p.get("hints", [])
-	if list.is_empty() and p.has("hint"):
-		list = [p.hint]
-	if list.is_empty():
-		hint_label.text = "NO HINTS FOR THIS ONE"
-		hint_text.text = "Type mode shows the reference solution after %d misses." % Submission.unlock_after(p)
-		next_hint.visible = false
-		return
-	var i := mini(_hint_at + (1 if advance else 0), list.size() - 1)
-	i = maxi(i, 0)
-	var level := Scaffold.level_for(str(p.get("concept", "")))
-	var misses := int(Progress.fails().get(problem_id, 0))
-	if Scaffold.hint_open(level, i, misses) or Progress.is_solved(problem_id):
-		if i != _hint_at:
-			Week.log_hint(problem_id, i)
-		_hint_at = i
-		hint_label.text = "HINT %d OF %d" % [i + 1, list.size()]
-		hint_text.text = str(list[i]).replace("`", "")
-	else:
-		hint_label.text = "HINT %d OF %d · LOCKED" % [i + 1, list.size()]
-		hint_text.text = "This hint opens %s. Hints are %s for this topic; change that in Profile." % [Scaffold.hint_lock_text(level), level]
-	next_hint.visible = _hint_at < list.size() - 1
 
 
 ## Next ›: inside a run the next stop; else the next review, or the next

@@ -431,3 +431,378 @@ static func fallback_distractors(value: Variant, want: int) -> Array:
 		if out.size() >= want:
 			break
 	return out
+
+
+# ---- what does this print: how the options are shown ----
+
+## The printed lines of an option value, as strings.
+static func as_lines(value: Variant) -> Array:
+	var arr: Array = value if value is Array else [value]
+	var out := []
+	for line in arr:
+		out.append(str(line))
+	return out
+
+
+## The lines that tell one option from the others: for each of the others,
+## the first line where the two part company. Sorted, without repeats.
+static func distinguishing_lines(options: Array, index: int) -> Array:
+	var lines := as_lines(options[index])
+	var marks := []
+	for j in options.size():
+		if j == index:
+			continue
+		var other := as_lines(options[j])
+		var d := 0
+		while d < lines.size() and d < other.size() and str(lines[d]) == str(other[d]):
+			d += 1
+		if d < lines.size() and not marks.has(d):
+			marks.append(d)
+	marks.sort()
+	return marks
+
+
+## The rows to show for one option: its lines, stacked, never joined onto
+## one line. More than max_rows and it is cut short around the line that
+## tells it from the option it is most like, so two options are never shown
+## the same rows: "…" stands for lines skipped in the middle, "…+N more" for
+## the rest.
+static func print_rows(options: Array, index: int, max_rows: int = 4) -> Array:
+	var lines := as_lines(options[index])
+	if lines.size() <= max_rows:
+		return lines
+	var marks := distinguishing_lines(options, index)
+	var shown: Array = lines.slice(0, max_rows - 1)
+	if not marks.is_empty() and int(marks[-1]) >= max_rows - 1:
+		shown = [lines[0], "…", lines[int(marks[-1])]]
+	var real := 0
+	for row in shown:
+		if row != "…":
+			real += 1
+	shown.append("…+%d more" % (lines.size() - real))
+	return shown
+
+
+## Whether the options can be told apart in the rows there is room for. When
+## they cannot, and no shorter question works either, the problem has no
+## print version at all.
+static func print_rows_distinct(options: Array, max_rows: int = 4) -> bool:
+	var seen := []
+	for i in options.size():
+		var rows := print_rows(options, i, max_rows)
+		if seen.has(rows):
+			return false
+		seen.append(rows)
+	return true
+
+
+## A shorter question for long output. "last" whenever the outputs end
+## differently: the answer has to be worked out, not counted off the page.
+## "count" only when they end the same way, and only when the lines cannot
+## be counted straight off the code (one print call, one line). "" keeps the
+## four stacked outputs.
+static func short_form(options: Array, solution: String = "") -> String:
+	if options.is_empty() or not (options[0] is Array) or as_lines(options[0]).size() <= 4:
+		return ""
+	if options.size() < 2:
+		return ""
+	var right := as_lines(options[0])
+	var last: String = right[-1] if right.size() > 0 else ""
+	var ends_apart := true
+	for i in range(1, options.size()):
+		var lines := as_lines(options[i])
+		if (lines[-1] if lines.size() > 0 else "") == last:
+			ends_apart = false
+	if ends_apart:
+		return "last"
+	if solution != "" and output_calls(solution) == right.size():
+		return ""
+	return "count"
+
+
+## How many lines a reader counts off the page: the calls the code makes,
+## one line each. That is the real count only when nothing repeats and
+## every call prints exactly once.
+static func output_calls(solution: String) -> int:
+	var re := RegEx.new()
+	re.compile("^\\s*[\\w.]+\\s*\\(.*\\)\\s*$")
+	var n := 0
+	for line in solution.split("\n"):
+		if re.search(str(line)) != null:
+			n += 1
+	return n
+
+
+## Plausible wrong answers to "what is the last line": what the buggy
+## versions ended with, then the lines the reader might stop on — the one
+## before the last, and the rest from the end backwards.
+static func last_distractors(options: Array, want: int) -> Array:
+	var right := as_lines(options[0])
+	var last: String = right[-1] if right.size() > 0 else ""
+	var out := []
+	for i in range(1, options.size()):
+		var lines := as_lines(options[i])
+		var s: String = lines[-1] if lines.size() > 0 else ""
+		if s != last and not out.has(s):
+			out.append(s)
+	for i in range(right.size() - 2, -1, -1):
+		if out.size() >= want:
+			break
+		var s := str(right[i])
+		if s != last and not out.has(s):
+			out.append(s)
+	return out.slice(0, want)
+
+
+## Plausible wrong answers to "how many lines": what the buggy versions
+## printed, then the misreadings — one line per print call (a loop's repeat
+## missed), the lines counted without their repeats, and the lines that are
+## not blank (a print() taken for printing nothing).
+static func count_distractors(options: Array, solution: String, want: int) -> Array:
+	var right := as_lines(options[0])
+	var n := right.size()
+	var out := []
+	var add := func(v: int) -> void:
+		if v > 0 and v != n and not out.has(v):
+			out.append(v)
+	for i in range(1, options.size()):
+		add.call(as_lines(options[i]).size())
+	if solution != "":
+		add.call(output_calls(solution))
+	var seen := []
+	var blank := 0
+	for line in right:
+		if not seen.has(str(line)):
+			seen.append(str(line))
+		if str(line).strip_edges() == "":
+			blank += 1
+	add.call(seen.size())
+	add.call(n - blank)
+	return out.slice(0, want)
+
+
+# ---- fill in the blank ----
+
+const COMPARISONS := [" == ", " != ", " < ", " <= ", " > ", " >= "]
+const ARITHMETIC := [" + ", " - ", " * ", " / ", " % "]
+const CONTROL_WORDS := ["if", "elif", "while", "for", "func", "return", "and", "or", "not", "in", "range"]
+## Which token a topic's problems blank, best first.
+const BLANK_ORDER := {
+	"comparison": ["comparison", "operator", "name", "call"],
+	"name": ["name", "call", "operator", "comparison"],
+	"operator": ["operator", "name", "comparison", "call"],
+	"call": ["call", "name", "operator", "comparison"],
+}
+
+
+## The kind of token a concept's problems are about, from its id.
+static func blank_kind_for(concept: String) -> String:
+	var c := concept.to_lower()
+	for pair in [["cond", "comparison"], ["compar", "comparison"], ["ifelse", "comparison"], ["arith", "operator"], ["multiply", "operator"], ["delta", "operator"], ["variable", "name"], ["member", "name"], ["readable", "name"], ["func", "call"], ["param", "call"], ["return", "call"], ["giant", "call"], ["turtle", "call"]]:
+		if c.contains(pair[0]):
+			return pair[1]
+	return "operator"
+
+
+## The words the other problems of a topic use: the names they call and the
+## names they declare. A wrong chip for a name or a call comes from here, so
+## it is a word from the same lesson rather than one out of nowhere.
+static func lesson_words(problems: Array, exclude_id: String) -> Array:
+	var out := []
+	var call := RegEx.new()
+	call.compile("(?<![\\w.])(\\w+)\\s*\\(")
+	for q in problems:
+		if str(q.get("id", "")) == exclude_id:
+			continue
+		var solution := str(q.get("solution", ""))
+		for m in call.search_all(solution):
+			var n := m.get_string(1)
+			if not CONTROL_WORDS.has(n) and not out.has(n):
+				out.append(n)
+		for n in _declared_names(Array(solution.split("\n"))):
+			if not out.has(n):
+				out.append(n)
+	return out
+
+
+## One kind of token, from the whole solution.
+static func _spot_of(kind: String, lines: Array, seed: String) -> Dictionary:
+	match kind:
+		"comparison":
+			return _find_op_token(lines, COMPARISONS, seed + ":cmp")
+		"operator":
+			return _find_op_token(lines, ARITHMETIC, seed + ":op")
+		"name":
+			return _find_name_token(lines, seed + ":name")
+		"call":
+			return _find_call_token(lines, seed + ":call")
+	return _find_last_token(lines)
+
+
+## The blank for a problem: the spot and its chips, the right one first.
+## The kinds are tried in the order its topic wants, and a kind that cannot
+## offer four chips gives way to the next. {} when none can.
+static func blank_for(problem: Dictionary, pool: Array = []) -> Dictionary:
+	var lines := Array(str(problem.get("solution", "")).split("\n"))
+	var seed := str(problem.get("id", ""))
+	var kinds: Array = BLANK_ORDER.get(blank_kind_for(str(problem.get("concept", ""))), BLANK_ORDER.operator).duplicate()
+	kinds.append("last")
+	for kind in kinds:
+		var spot := _spot_of(kind, lines, seed)
+		if spot.is_empty():
+			continue
+		var chips := blank_choices(spot, lines, pool, seed)
+		if chips.size() >= 4:
+			return {"spot": spot, "chips": chips}
+	return {}
+
+
+## The token a problem's topic is about, whether or not it has chips to go
+## with it: the one its lesson teaches, else the last token that is not
+## boilerplate. { "line", "start", "end", "token", "kind" }, or {}.
+static func blank_spot(problem: Dictionary) -> Dictionary:
+	var lines := Array(str(problem.get("solution", "")).split("\n"))
+	var seed := str(problem.get("id", ""))
+	for kind in BLANK_ORDER.get(blank_kind_for(str(problem.get("concept", ""))), BLANK_ORDER.operator):
+		var spot := _spot_of(kind, lines, seed)
+		if not spot.is_empty():
+			return spot
+	return _find_last_token(lines)
+
+
+## An operator, spaced as this course writes them; the blank covers the
+## operator itself, not the spaces around it.
+static func _find_op_token(lines: Array, group: Array, seed: String) -> Dictionary:
+	var cands := []
+	for li in lines.size():
+		var code: String = _code_part(lines[li])[0]
+		if _is_func_line(code):
+			continue
+		var masked := _mask(code)
+		for op in group:
+			var pos := masked.find(op)
+			while pos >= 0:
+				cands.append({"line": li, "start": pos + 1, "end": pos + op.length() - 1, "token": str(op).strip_edges(), "kind": "operator", "group": group})
+				pos = masked.find(op, pos + op.length())
+	if cands.is_empty():
+		return {}
+	return cands[seeded_order(seed, cands.size())[0]]
+
+
+## A use of a declared name, or its declaration when there is no use.
+static func _find_name_token(lines: Array, seed: String) -> Dictionary:
+	var names := _declared_names(lines)
+	if names.size() < 2:
+		return {}
+	var uses := []
+	var decls := []
+	for li in lines.size():
+		var code: String = _code_part(lines[li])[0]
+		var head := code.strip_edges(true, false)
+		var masked := _mask(code)
+		var is_decl: bool = head.begins_with("var ") or head.begins_with("const ") or _is_func_line(code)
+		for a in names:
+			var re := RegEx.new()
+			re.compile("(?<![\\w.\"'])" + a + "(?![\\w\"'])")
+			for m in re.search_all(masked):
+				var spot := {"line": li, "start": m.get_start(), "end": m.get_end(), "token": a, "kind": "name", "names": names}
+				if is_decl:
+					decls.append(spot)
+				else:
+					uses.append(spot)
+	var pool: Array = uses if uses.size() > 0 else decls
+	if pool.is_empty():
+		return {}
+	return pool[seeded_order(seed, pool.size())[0]]
+
+
+## The name of a function being called, never a keyword or a declaration.
+static func _find_call_token(lines: Array, seed: String) -> Dictionary:
+	var call := RegEx.new()
+	call.compile("(?<![\\w.])(\\w+)\\s*\\(")
+	var cands := []
+	for li in lines.size():
+		var code: String = _code_part(lines[li])[0]
+		if _is_func_line(code):
+			continue
+		for m in call.search_all(_mask(code)):
+			if CONTROL_WORDS.has(m.get_string(1)):
+				continue
+			cands.append({"line": li, "start": m.get_start(1), "end": m.get_end(1), "token": m.get_string(1), "kind": "call"})
+	if cands.is_empty():
+		return {}
+	return cands[seeded_order(seed, cands.size())[0]]
+
+
+## The fallback: the last word or number on the last line that is not a
+## declaration, a blank line, or "pass".
+static func _find_last_token(lines: Array) -> Dictionary:
+	var word := RegEx.new()
+	word.compile("[A-Za-z_][\\w.]*|\\d+")
+	for i in lines.size():
+		var li := lines.size() - 1 - i
+		var code: String = _code_part(lines[li])[0]
+		var head := code.strip_edges(true, false)
+		if head == "" or head == "pass" or _is_func_line(code):
+			continue
+		var ms := word.search_all(_mask(code))
+		if ms.is_empty():
+			continue
+		var m: RegExMatch = ms[-1]
+		return {"line": li, "start": m.get_start(), "end": m.get_end(), "token": m.get_string(), "kind": "token", "names": _declared_names(lines)}
+	return {}
+
+
+## The chips for a blank: the right token first, then wrong ones by the same
+## rules fix-the-bug uses (a wrong operator, off by one, a name in scope, a
+## similar function from the same lesson). An empty list means the problem
+## has no blank worth offering.
+static func blank_choices(spot: Dictionary, lines: Array, pool: Array, seed: String, want: int = 4) -> Array:
+	if spot.is_empty():
+		return []
+	var right: String = str(spot.token)
+	var wrong := []
+	var add := func(s: String) -> void:
+		if s != "" and s != right and not wrong.has(s):
+			wrong.append(s)
+	match str(spot.kind):
+		"operator":
+			for op in spot.get("group", ARITHMETIC):
+				add.call(str(op).strip_edges())
+		"name":
+			for n in spot.get("names", _declared_names(lines)):
+				add.call(str(n))
+			for n in pool:
+				add.call(str(n))
+		"call":
+			for n in pool:
+				add.call(str(n))
+			for n in _declared_names(lines):
+				add.call(str(n))
+		_:
+			if right.is_valid_int():
+				for alt in [int(right) + 1, int(right) - 1, int(right) * 2]:
+					if alt >= 0:
+						add.call(str(alt))
+			for n in spot.get("names", _declared_names(lines)):
+				add.call(str(n))
+			for n in pool:
+				add.call(str(n))
+	if wrong.size() < want - 1:
+		return []
+	var order := seeded_order(seed + ":chips", wrong.size())
+	var picked := []
+	for k in order:
+		if picked.size() < want - 1:
+			picked.append(wrong[k])
+	return [right] + picked
+
+
+## The solution with the blank filled by `token`; "" leaves the gap.
+static func blank_code(solution: String, spot: Dictionary, token: String) -> String:
+	if spot.is_empty():
+		return solution
+	var lines := Array(solution.split("\n"))
+	var line: String = lines[spot.line]
+	lines[spot.line] = line.substr(0, spot.start) + token + line.substr(spot.end)
+	return "\n".join(lines)
